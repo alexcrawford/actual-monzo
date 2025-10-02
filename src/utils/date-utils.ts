@@ -64,6 +64,9 @@ export function calculateDefaultDateRange(): DateRange {
  * @param endStr End date string (YYYY-MM-DD)
  * @returns DateRange object with validated dates
  * @throws Error if dates are invalid or range is invalid
+ *
+ * Note: The end date is inclusive - transactions from the entire end date will be included.
+ * This is achieved by setting end time to 23:59:59.999 on the specified date.
  */
 export function parseDateRange(startStr: string, endStr: string): DateRange {
   const start = validateDateString(startStr);
@@ -84,6 +87,10 @@ export function parseDateRange(startStr: string, endStr: string): DateRange {
         `Consider breaking into smaller imports`
     );
   }
+
+  // Set end date to the end of the day (23:59:59.999) to include all transactions from that day
+  // Since Monzo API's 'before' parameter is exclusive, this ensures we get all of the end date
+  end.setUTCHours(23, 59, 59, 999);
 
   return { start, end };
 }
