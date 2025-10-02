@@ -50,7 +50,7 @@ async function fetchActualAccounts(config: Config): Promise<ActualAccount[]> {
     // Resolve data directory path (expand ~ and relative paths)
     let dataDir = config.actualBudget.dataDirectory;
     if (dataDir.startsWith('~')) {
-      dataDir = dataDir.replace('~', process.env.HOME || '');
+      dataDir = dataDir.replace('~', process.env.HOME ?? '');
     } else if (dataDir.startsWith('.')) {
       dataDir = path.resolve(process.cwd(), dataDir);
     }
@@ -164,7 +164,7 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
 
   // Helper to generate friendly account name
   const getAccountDisplayName = (account: MonzoAccount): string => {
-    const ownerName = account.owners?.[0]?.preferred_name || 'Unknown';
+    const ownerName = account.owners?.[0]?.preferred_name ?? 'Unknown';
     const accountType = account.product_type === 'flex' ? 'Flex' :
                        account.type === 'uk_retail_joint' ? 'Joint Account' :
                        'Current Account';

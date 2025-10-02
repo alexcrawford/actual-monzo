@@ -19,7 +19,7 @@ export interface OAuthFlowParams {
 }
 
 export class MonzoOAuthService {
-  private apiClient: MonzoApiClient;
+  private readonly apiClient: MonzoApiClient;
 
   constructor() {
     this.apiClient = new MonzoApiClient();

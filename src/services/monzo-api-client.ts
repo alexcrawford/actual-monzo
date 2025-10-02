@@ -102,7 +102,7 @@ export class MonzoApiClient {
         }
       });
 
-      return response.data.accounts || [];
+      return response.data.accounts ?? [];
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
@@ -134,7 +134,7 @@ export class MonzoApiClient {
     before: string,
     accessToken: string
   ): Promise<MonzoTransaction[]> {
-    let allTransactions: MonzoTransaction[] = [];
+    const allTransactions: MonzoTransaction[] = [];
     let currentSince = since;
     let hasMorePages = true;
     let retryCount = 0;
@@ -158,7 +158,7 @@ export class MonzoApiClient {
           params
         });
 
-        const transactions = response.data.transactions || [];
+        const transactions = response.data.transactions ?? [];
         allTransactions.push(...transactions);
 
         // Check if we got a full page - if so, there might be more

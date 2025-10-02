@@ -26,7 +26,7 @@ export class ActualClient {
   private resolveDataDirectory(dataDir: string): string {
     // Expand tilde
     if (dataDir.startsWith('~')) {
-      return dataDir.replace('~', process.env.HOME || '');
+      return dataDir.replace('~', process.env.HOME ?? '');
     }
 
     // Resolve relative paths to absolute
@@ -161,7 +161,7 @@ export class ActualClient {
         success: false,
         error: {
           code: SetupErrorCode.CONFIGURATION_ERROR,
-          message: `Unexpected error connecting to Actual Budget: ${err.message || 'Unknown error'}`,
+          message: `Unexpected error connecting to Actual Budget: ${err.message ?? 'Unknown error'}`,
           originalError: err
         }
       };

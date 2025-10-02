@@ -73,7 +73,7 @@ async function checkExistingConfig(): Promise<ConfigState> {
   }
 
   const result = await validateConfig();
-  return result.state || ConfigState.MALFORMED;
+  return result.state ?? ConfigState.MALFORMED;
 }
 
 async function runCompleteSetup() {

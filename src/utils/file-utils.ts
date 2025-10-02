@@ -460,7 +460,7 @@ export async function createTempFile(
   } = {}
 ): Promise<FileOperationResult> {
   const { prefix = 'temp', suffix = '.tmp', dir, encoding = 'utf8' } = options;
-  const tempDir = dir || join(homedir(), '.cache');
+  const tempDir = dir ?? join(homedir(), '.cache');
 
   try {
     await ensureDirectory(tempDir);

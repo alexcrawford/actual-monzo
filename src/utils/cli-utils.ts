@@ -41,28 +41,28 @@ export function createProgressTracker(
 
     updateStep(step: number, message?: string) {
       this.current = step;
-      const text = message || `Step ${step} of ${total}`;
+      const text = message ?? `Step ${step} of ${total}`;
       this.spinner.text = `${text} (${step}/${total})`;
     },
 
     succeed(message?: string) {
       const elapsed = Date.now() - this.startTime.getTime();
-      const finalMessage = message || `Completed ${this.total} steps in ${formatDuration(elapsed)}`;
+      const finalMessage = message ?? `Completed ${this.total} steps in ${formatDuration(elapsed)}`;
       this.spinner.succeed(finalMessage);
     },
 
     fail(message?: string) {
       const elapsed = Date.now() - this.startTime.getTime();
-      const finalMessage = message || `Failed after ${formatDuration(elapsed)} (step ${this.current}/${this.total})`;
+      const finalMessage = message ?? `Failed after ${formatDuration(elapsed)} (step ${this.current}/${this.total})`;
       this.spinner.fail(finalMessage);
     },
 
     warn(message?: string) {
-      this.spinner.warn(message || 'Warning occurred');
+      this.spinner.warn(message ?? 'Warning occurred');
     },
 
     info(message?: string) {
-      this.spinner.info(message || 'Information');
+      this.spinner.info(message ?? 'Information');
     }
   };
 }
@@ -150,7 +150,7 @@ export async function promptForInput(
       name: 'value',
       message: chalk.cyan(message),
       default: defaultValue,
-      validate: validate || ((input: string) => input.trim().length > 0 || 'Input cannot be empty')
+      validate: validate ?? ((input: string) => input.trim().length > 0 || 'Input cannot be empty')
     }
   ]);
 
@@ -292,8 +292,8 @@ export function setupGracefulShutdown(cleanup?: () => void | Promise<void>): voi
     process.exit(0);
   };
 
-  process.on('SIGINT', () => handleShutdown('SIGINT'));
-  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => void handleShutdown('SIGINT'));
+  process.on('SIGTERM', () => void handleShutdown('SIGTERM'));
 }
 
 /**

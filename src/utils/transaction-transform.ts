@@ -21,7 +21,7 @@ export function transformMonzoToActual(
   const date = formatDate(monzoTx.settled || monzoTx.created);
 
   // Extract payee: prefer merchant name, fallback to description
-  const payee_name = monzoTx.merchant?.name || monzoTx.description;
+  const payee_name = monzoTx.merchant?.name ?? monzoTx.description;
 
   // Create notes with Monzo category and transaction ID for reference
   const notes = `Monzo: ${monzoTx.category} | ID: ${monzoTx.id}`;

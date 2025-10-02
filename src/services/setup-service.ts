@@ -26,8 +26,8 @@ export interface ActualSetupParams {
 }
 
 export class SetupService {
-  private monzoService: MonzoOAuthService;
-  private actualClient: ActualClient;
+  private readonly monzoService: MonzoOAuthService;
+  private readonly actualClient: ActualClient;
 
   constructor() {
     this.monzoService = new MonzoOAuthService();

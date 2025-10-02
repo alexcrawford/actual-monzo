@@ -35,9 +35,9 @@ async function createCLI(): Promise<Command> {
 
   // Configure main program
   program
-    .name(packageJson.name || 'actual-monzo')
-    .version(packageJson.version || '1.0.0')
-    .description(packageJson.description || 'CLI tool to import Monzo transactions into Actual Budget')
+    .name(packageJson.name ?? 'actual-monzo')
+    .version(packageJson.version ?? '1.0.0')
+    .description(packageJson.description ?? 'CLI tool to import Monzo transactions into Actual Budget')
     .configureHelp({
       sortSubcommands: true,
       subcommandTerm: (cmd) => cmd.name()
@@ -85,7 +85,7 @@ export async function main(argv?: string[]): Promise<void> {
     const program = await createCLI();
 
     // Parse command line arguments
-    await program.parseAsync(argv || process.argv);
+    await program.parseAsync(argv ?? process.argv);
   } catch (error) {
     console.error(chalk.red('CLI Error:'), error instanceof Error ? error.message : String(error));
     process.exit(1);

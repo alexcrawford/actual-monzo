@@ -46,11 +46,11 @@ const DEFAULT_CONFIG: ActualMonzoConfig = {
  * Secure configuration manager for CLI settings
  */
 export class ConfigManager {
-  private configPath: string;
+  private readonly configPath: string;
   private config: ActualMonzoConfig | null = null;
 
   constructor(configPath?: string) {
-    this.configPath = configPath || join(homedir(), '.config', 'actual-monzo', 'config.json');
+    this.configPath = configPath ?? join(homedir(), '.config', 'actual-monzo', 'config.json');
   }
 
   /**
@@ -199,7 +199,7 @@ export class ConfigManager {
     const config = await this.load();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const defaultBackupPath = this.configPath.replace('.json', `-backup-${timestamp}.json`);
-    const targetPath = backupPath || defaultBackupPath;
+    const targetPath = backupPath ?? defaultBackupPath;
 
     await writeFile(targetPath, JSON.stringify(config, null, 2), 'utf8');
     return targetPath;

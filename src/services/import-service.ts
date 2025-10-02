@@ -19,7 +19,7 @@ import * as path from 'path';
 import type { Ora } from 'ora';
 
 export class ImportService {
-  private monzoClient: MonzoApiClient;
+  private readonly monzoClient: MonzoApiClient;
 
   constructor() {
     this.monzoClient = new MonzoApiClient();
@@ -59,7 +59,7 @@ export class ImportService {
         // Resolve data directory path (expand ~ and relative paths)
         let dataDir = config.actualBudget.dataDirectory;
         if (dataDir.startsWith('~')) {
-          dataDir = dataDir.replace('~', process.env.HOME || '');
+          dataDir = dataDir.replace('~', process.env.HOME ?? '');
         } else if (dataDir.startsWith('.')) {
           dataDir = path.resolve(process.cwd(), dataDir);
         }

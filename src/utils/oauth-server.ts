@@ -82,10 +82,10 @@ export async function createOAuthCallbackServer(
     // Resolve with callback result
     if (callbackResolver) {
       callbackResolver({
-        code: code || undefined,
-        state: state || undefined,
-        error: error || undefined,
-        errorDescription: errorDescription || undefined
+        code: code ?? undefined,
+        state: state ?? undefined,
+        error: error ?? undefined,
+        errorDescription: errorDescription ?? undefined
       });
       callbackResolver = null;
     }
