@@ -1,12 +1,17 @@
 {
   "name": "actual-monzo",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "CLI tool to import Monzo transactions into Actual Budget",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "actual-monzo": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -18,7 +23,8 @@
     "format": "prettier --write src/ tests/",
     "type-check": "tsc --noEmit",
     "start": "node dist/index.js",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build && pnpm test:run"
   },
   "dependencies": {
     "@actual-app/api": "^25.9.0",
@@ -58,8 +64,20 @@
     "actual-budget",
     "cli",
     "finance",
-    "typescript"
+    "typescript",
+    "banking",
+    "transactions",
+    "sync",
+    "import"
   ],
-  "author": "Alex",
-  "license": "MIT"
+  "author": "Alex Crawford <alex@kick.digital>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexcrawford/actual-monzo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexcrawford/actual-monzo/issues"
+  },
+  "homepage": "https://github.com/alexcrawford/actual-monzo#readme"
 }
