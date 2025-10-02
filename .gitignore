@@ -78,6 +78,9 @@ temp/
 # Configuration file with secrets
 config.yaml
 
+# Agent-specific instructions (user-specific, not project-wide)
+CLAUDE.md
+
 # Actual Budget data directory - keep directory but ignore contents
 data/*
 !data/.gitkeep
