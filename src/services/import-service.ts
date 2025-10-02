@@ -14,6 +14,7 @@ import type { Config } from '../utils/config-schema.js';
 import { MonzoApiClient } from './monzo-api-client.js';
 import { transformMonzoToActual } from '../utils/transaction-transform.js';
 import { recordImportSession } from '../utils/import-history.js';
+import { saveConfig } from '../utils/config-manager.js';
 import * as actualApi from '@actual-app/api';
 import * as path from 'path';
 import type { Ora } from 'ora';
@@ -23,6 +24,73 @@ export class ImportService {
 
   constructor() {
     this.monzoClient = new MonzoApiClient();
+  }
+
+  /**
+   * Check if access token is expired or expiring soon (within 5 minutes)
+   */
+  private isTokenExpired(tokenExpiresAt: string | undefined): boolean {
+    if (!tokenExpiresAt) {
+      return true;
+    }
+
+    const expiryTime = new Date(tokenExpiresAt).getTime();
+    const now = Date.now();
+    const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+
+    return expiryTime - now < bufferMs;
+  }
+
+  /**
+   * Refresh Monzo access token and update config
+   */
+  private async refreshTokenIfNeeded(config: Config): Promise<Config> {
+    // Check if token needs refresh
+    if (!this.isTokenExpired(config.monzo.tokenExpiresAt)) {
+      return config; // Token still valid
+    }
+
+    // Validate we have refresh token
+    if (!config.monzo.refreshToken) {
+      throw new Error(
+        'Monzo access token expired and no refresh token available.\n' +
+          'Please re-authenticate: actual-monzo setup'
+      );
+    }
+
+    try {
+      // Refresh the token
+      const tokenResponse = await this.monzoClient.refreshAccessToken({
+        clientId: config.monzo.clientId,
+        clientSecret: config.monzo.clientSecret,
+        refreshToken: config.monzo.refreshToken,
+      });
+
+      // Calculate new expiry time
+      const expiresInMs = tokenResponse.expires_in * 1000;
+      const tokenExpiresAt = new Date(Date.now() + expiresInMs).toISOString();
+
+      // Update config with new tokens
+      const updatedConfig: Config = {
+        ...config,
+        monzo: {
+          ...config.monzo,
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          tokenExpiresAt,
+        },
+      };
+
+      // Save updated config
+      await saveConfig(updatedConfig);
+
+      return updatedConfig;
+    } catch (error) {
+      throw new Error(
+        `Failed to refresh Monzo access token: ${error instanceof Error ? error.message : 'Unknown error'}\n` +
+          'Please re-authenticate: actual-monzo setup'
+      );
+    }
   }
 
   /**
@@ -42,6 +110,9 @@ export class ImportService {
     dryRun: boolean,
     spinner?: Ora
   ): Promise<ImportSession> {
+    // Refresh token if expired or expiring soon
+    const refreshedConfig = await this.refreshTokenIfNeeded(config);
+
     const session: ImportSession = {
       startTime: new Date(),
       dateRange,
@@ -56,7 +127,7 @@ export class ImportService {
     if (!dryRun) {
       try {
         // Resolve data directory path (expand ~ and relative paths)
-        let dataDir = config.actualBudget.dataDirectory;
+        let dataDir = refreshedConfig.actualBudget.dataDirectory;
         if (dataDir.startsWith('~')) {
           dataDir = dataDir.replace('~', process.env.HOME ?? '');
         } else if (dataDir.startsWith('.')) {
@@ -64,8 +135,8 @@ export class ImportService {
         }
 
         await actualApi.init({
-          serverURL: config.actualBudget.serverUrl,
-          password: config.actualBudget.password,
+          serverURL: refreshedConfig.actualBudget.serverUrl,
+          password: refreshedConfig.actualBudget.password,
           dataDir: dataDir,
         });
 
@@ -101,7 +172,7 @@ export class ImportService {
             mapping.monzoAccountId,
             since,
             before,
-            config.monzo.accessToken!
+            refreshedConfig.monzo.accessToken!
           );
 
           // Transform to Actual Budget format
