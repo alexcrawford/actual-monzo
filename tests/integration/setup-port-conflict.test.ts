@@ -36,18 +36,23 @@ describe('Integration: OAuth Port Conflict', () => {
     }
   });
 
-  it('should start on port 8234 by default', async () => {
-    const server = await createOAuthCallbackServer();
+  it('should start on port from OAUTH_CALLBACK_PORT env var or default 8234', async () => {
+    // Ensure no env var set (uses default)
+    delete process.env.OAUTH_CALLBACK_PORT;
 
+    const server = await createOAuthCallbackServer();
     const port = await server.start();
 
-    // Should start on fixed port 8234
+    // Should start on default port 8234
     expect(port).toBe(8234);
 
     await server.shutdown();
   });
 
-  it('should throw error when port 8234 is already in use', async () => {
+  it('should throw error when configured port is already in use', async () => {
+    // Ensure default port
+    delete process.env.OAUTH_CALLBACK_PORT;
+
     // Create a blocking server on port 8234
     blockingServer = http.createServer();
     await new Promise<void>((resolve) => {

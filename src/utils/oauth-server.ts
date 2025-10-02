@@ -20,16 +20,37 @@ export interface OAuthServer {
 }
 
 /**
- * Creates a temporary OAuth callback server
- * Listens on localhost only on port 8234
- * Port 8234 chosen to avoid conflicts with common dev servers (3000-4000)
+ * Gets the OAuth callback port from environment or default
+ * Validates that the port is within valid range (1-65535)
  */
-export async function createOAuthCallbackServer(
-  startPort: number = 8234,
-  maxPort: number = 8234
-): Promise<OAuthServer> {
+function getOAuthCallbackPort(): number {
+  const DEFAULT_PORT = 8234;
+  const envPort = process.env.OAUTH_CALLBACK_PORT;
+
+  if (!envPort) {
+    return DEFAULT_PORT;
+  }
+
+  const port = parseInt(envPort, 10);
+
+  // Validate port is a valid number and within valid range
+  if (isNaN(port) || port < 1 || port > 65535) {
+    console.warn(`Invalid OAUTH_CALLBACK_PORT "${envPort}", falling back to default ${DEFAULT_PORT}`);
+    return DEFAULT_PORT;
+  }
+
+  return port;
+}
+
+/**
+ * Creates a temporary OAuth callback server
+ * Port can be configured via OAUTH_CALLBACK_PORT environment variable (default: 8234)
+ * Listens on localhost only
+ */
+export async function createOAuthCallbackServer(): Promise<OAuthServer> {
+  const port = getOAuthCallbackPort();
   let server: http.Server | null = null;
-  let actualPort: number = startPort;
+  let actualPort: number = port;
   let callbackResolver: ((result: OAuthCallbackResult) => void) | null = null;
 
   const requestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -92,41 +113,32 @@ export async function createOAuthCallbackServer(
   };
 
   const start = async (): Promise<number> => {
-    // Try ports from startPort to maxPort
-    for (let port = startPort; port <= maxPort; port++) {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          server = http.createServer(requestHandler);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server = http.createServer(requestHandler);
 
-          server.on('error', (err: NodeJS.ErrnoException) => {
-            if (err.code === 'EADDRINUSE') {
-              reject(new Error(`Port ${port} is already in use`));
-            } else {
-              reject(err);
-            }
-          });
-
-          server.listen(port, 'localhost', () => {
-            actualPort = port;
-            resolve();
-          });
+        server.on('error', (err: NodeJS.ErrnoException) => {
+          if (err.code === 'EADDRINUSE') {
+            reject(new Error(`Port ${port} is already in use`));
+          } else {
+            reject(err);
+          }
         });
 
-        return actualPort;
-      } catch (error) {
-        if (port === maxPort) {
-          throw new Error(
-            `Port ${startPort} is already in use. ` +
-            `Please free up the port or check if another OAuth flow is running.\n` +
-            `Run: lsof -i :${startPort} to see what's using the port.`
-          );
-        }
-        // Try next port
-        continue;
-      }
-    }
+        server.listen(port, 'localhost', () => {
+          actualPort = port;
+          resolve();
+        });
+      });
 
-    throw new Error(`Failed to start server on any port ${startPort}-${maxPort}`);
+      return actualPort;
+    } catch (error) {
+      throw new Error(
+        `Port ${port} is already in use. ` +
+        `Please free up the port or check if another OAuth flow is running.\n` +
+        `Run: lsof -i :${port} to see what's using the port.`
+      );
+    }
   };
 
   const waitForCallback = (): Promise<OAuthCallbackResult> => {

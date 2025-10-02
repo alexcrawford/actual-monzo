@@ -28,7 +28,7 @@ tests/
 ```
 
 ## Commands
-- `pnpm test` - Run all tests
+- `pnpm vitest run` - Run all tests
 - `pnpm build` - Build the project
 - `pnpm lint` - Run ESLint
 - `node dist/index.js setup` - Run setup command
