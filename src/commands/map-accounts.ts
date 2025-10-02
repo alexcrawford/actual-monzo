@@ -14,18 +14,7 @@ import * as actualApi from '@actual-app/api';
 import * as path from 'path';
 import type { AccountMapping } from '../types/import.js';
 import type { Config } from '../utils/config-schema.js';
-
-interface MonzoAccount {
-  id: string;
-  description: string;
-  type: string;
-  owners?: Array<{
-    user_id: string;
-    preferred_name: string;
-    preferred_first_name: string;
-  }>;
-  product_type?: string;
-}
+import type { MonzoAccount } from '../types/monzo.js';
 
 interface ActualAccount {
   id: string;

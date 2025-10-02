@@ -44,18 +44,16 @@ export enum SetupErrorCode {
   USER_CANCELLED = 'user_cancelled'
 }
 
-export interface SetupPhaseResult<T = any> {
+export interface SetupPhaseResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: SetupError;
 }
 
 export interface SetupSession {
-  monzoConfig?: any;
-  actualConfig?: any;
   state: ConfigState;
-  monzoPhase?: SetupPhaseResult;
-  actualPhase?: SetupPhaseResult;
+  monzoPhase?: SetupPhaseResult<import('../types/config.js').MonzoConfiguration>;
+  actualPhase?: SetupPhaseResult<import('../types/config.js').ActualBudgetConfiguration>;
   overallSuccess?: boolean;
   completedAt?: string;
 }
@@ -83,7 +81,7 @@ export interface ValidationResult {
   /** Did validation pass? */
   valid: boolean;
   /** Parsed config if valid */
-  config?: unknown;
+  config?: import('../utils/config-schema.js').Config;
   /** Validation errors if invalid */
   errors?: string[];
   /** Current config state */

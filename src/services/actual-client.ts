@@ -54,7 +54,7 @@ export class ActualClient {
       // Create data directory if it doesn't exist
       try {
         await fs.mkdir(resolvedDataDir, { recursive: true });
-      } catch (mkdirError: any) {
+      } catch (mkdirError) {
         return {
           success: false,
           error: {
@@ -64,7 +64,7 @@ export class ActualClient {
               `  - You have write permissions\n` +
               `  - Parent directory exists\n` +
               `  - Disk space is available`,
-            originalError: mkdirError
+            originalError: mkdirError instanceof Error ? mkdirError : new Error(String(mkdirError))
           }
         };
       }
@@ -84,7 +84,7 @@ export class ActualClient {
         validatedAt
       };
     } catch (error) {
-      const err = error as any;
+      const err = error as Error & { code?: string; status?: number };
 
       // Categorize error types
       if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {

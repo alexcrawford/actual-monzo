@@ -230,7 +230,7 @@ export async function suppressConsole<T>(
   console.warn = () => {};
   console.error = () => {};
   // Also suppress direct stderr writes (Actual Budget API uses this)
-  process.stderr.write = (() => true) as any;
+  process.stderr.write = (() => true) as unknown as typeof process.stderr.write;
 
   try {
     return await callback();

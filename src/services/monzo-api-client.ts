@@ -5,7 +5,7 @@
 
 import axios, { AxiosError } from 'axios';
 import type { OAuthTokenResponse, WhoAmIResponse } from '../types/oauth.js';
-import type { MonzoTransaction } from '../types/import.js';
+import type { MonzoAccount, MonzoTransaction } from '../types/monzo.js';
 
 const MONZO_API_BASE = 'https://api.monzo.com';
 
@@ -69,7 +69,7 @@ export class MonzoApiClient {
 
         // Handle OAuth error responses
         if (axiosError.response?.data) {
-          const errorData = axiosError.response.data as any;
+          const errorData = axiosError.response.data as { error?: string };
           if (errorData.error) {
             throw new Error(errorData.error);
           }
@@ -94,7 +94,7 @@ export class MonzoApiClient {
   /**
    * Get all Monzo accounts for the authenticated user
    */
-  async getAccounts(accessToken: string): Promise<any[]> {
+  async getAccounts(accessToken: string): Promise<MonzoAccount[]> {
     try {
       const response = await axios.get(`${MONZO_API_BASE}/accounts`, {
         headers: {
@@ -143,7 +143,7 @@ export class MonzoApiClient {
 
     while (hasMorePages) {
       try {
-        const params: any = {
+        const params: Record<string, string | number> = {
           account_id: accountId,
           since: currentSince,
           before,

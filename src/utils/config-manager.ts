@@ -153,8 +153,8 @@ export async function validateConfig(
       // Zod validation error
       // Check for ZodError using issues array
       if (error && typeof error === 'object' && 'issues' in error) {
-        const zodError = error as any;
-        const errors = zodError.issues.map((issue: any) => {
+        const zodError = error as { issues: Array<{ path: (string | number)[]; message: string }> };
+        const errors = zodError.issues.map((issue) => {
           const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
           return `${path}${issue.message}`;
         });

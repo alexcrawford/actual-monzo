@@ -2,25 +2,8 @@
  * Type definitions for transaction import feature
  */
 
-/**
- * Monzo transaction as returned by /transactions API endpoint
- */
-export interface MonzoTransaction {
-  id: string;
-  account_id: string;
-  amount: number;
-  created: string;
-  currency: string;
-  description: string;
-  merchant?: {
-    name: string;
-    category: string;
-  } | null;
-  notes: string;
-  settled: string;
-  category: string;
-  decline_reason: string | null;
-}
+// Re-export MonzoTransaction from the shared monzo types
+export type { MonzoTransaction } from './monzo.js';
 
 /**
  * Actual Budget transaction format for import

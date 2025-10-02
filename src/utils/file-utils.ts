@@ -495,7 +495,7 @@ export function watchFile(
 ): () => void {
   const { watchFile, unwatchFile } = require('fs');
 
-  watchFile(filePath, (current: any, previous: any) => {
+  watchFile(filePath, (current: { mtime: Date }, previous: { mtime: Date }) => {
     if (current.mtime !== previous.mtime) {
       callback('change', basename(filePath));
     }
