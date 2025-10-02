@@ -106,9 +106,13 @@ export class ImportService {
 
           // Transform to Actual Budget format
           // Note: Actual Budget handles duplicate detection automatically via imported_id
-          const actualTransactions: ActualTransaction[] = monzoTransactions.map(tx =>
+          const allTransactions: ActualTransaction[] = monzoTransactions.map(tx =>
             transformMonzoToActual(tx, mapping)
           );
+
+          // Filter out zero-amount transactions - they don't represent actual money movement
+          // (often authorization holds or system entries)
+          const actualTransactions = allTransactions.filter(tx => tx.amount !== 0);
 
           if (spinner) {
             const verb = dryRun ? 'Processing' : 'Importing';
