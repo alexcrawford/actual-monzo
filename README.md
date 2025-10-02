@@ -16,7 +16,7 @@ Automated synchronization between Monzo bank accounts and Actual Budget.
 1. **Monzo Developer Account**
    - Register at [Monzo Developers](https://developers.monzo.com/)
    - Create an OAuth client application
-   - Set redirect URI: `http://localhost:8234/callback`
+   - Set redirect URI: `http://localhost:8234/callback` (or custom port, see below)
    - Note your Client ID and Client Secret
 
 2. **Actual Budget Server**
@@ -56,6 +56,15 @@ This will:
 4. Validate the connection and save to `config.yaml`
 
 **Security:** The config file is automatically set to `chmod 600` (owner read/write only).
+
+**Custom OAuth Port:** To use a different port for the OAuth callback (default: 8234):
+
+```bash
+# Set custom port and run setup
+OAUTH_CALLBACK_PORT=9000 node dist/index.js setup
+```
+
+Make sure your Monzo OAuth redirect URI matches: `http://localhost:{PORT}/callback`
 
 ### Map Accounts
 
