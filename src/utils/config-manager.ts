@@ -3,7 +3,7 @@
  * Handles loading, saving, and validating config.yaml
  */
 
-import { readFile, writeFile, access, chmod } from 'fs/promises';
+import { readFile, writeFile, access, chmod, mkdir } from 'fs/promises';
 import { load, dump } from 'js-yaml';
 import { ConfigSchema, type Config } from './config-schema.js';
 import { ConfigState } from '../types/setup.js';
@@ -13,14 +13,37 @@ import path from 'path';
 import { homedir } from 'os';
 
 const CONFIG_FILE_NAME = 'config.yaml';
+const APP_DIR_NAME = '.actual-monzo';
 
 /**
- * Gets the absolute path to config.yaml in project root
+ * Gets the base directory for config and logs
+ * Supports ACTUAL_MONZO_CONFIG_DIR environment variable for testing
+ */
+function getBaseDirectory(): string {
+  // Allow override via environment variable (for testing)
+  if (process.env.ACTUAL_MONZO_CONFIG_DIR) {
+    return process.env.ACTUAL_MONZO_CONFIG_DIR;
+  }
+  // Default: ~/.actual-monzo/
+  return path.join(homedir(), APP_DIR_NAME);
+}
+
+/**
+ * Gets the global application directory (~/.actual-monzo/)
+ * Creates the directory if it doesn't exist
+ */
+export async function getAppDirectory(): Promise<string> {
+  const appDir = getBaseDirectory();
+  await mkdir(appDir, { recursive: true });
+  return appDir;
+}
+
+/**
+ * Gets the absolute path to config.yaml in global config directory
  */
 export function getConfigPath(): string {
-  // In production, config will be in same directory as executable
-  // For development, use project root
-  return path.join(process.cwd(), CONFIG_FILE_NAME);
+  // Use global config directory: ~/.actual-monzo/config.yaml
+  return path.join(getBaseDirectory(), CONFIG_FILE_NAME);
 }
 
 /**
@@ -70,6 +93,9 @@ export async function loadConfig(): Promise<Config> {
  * Saves config to config.yaml with validation
  */
 export async function saveConfig(config: Config): Promise<void> {
+  // Ensure app directory exists
+  await getAppDirectory();
+
   const configPath = getConfigPath();
 
   // Validate before saving

@@ -8,9 +8,25 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { homedir } from 'os';
 
-// Import log file in logs directory
-const LOG_DIR = path.resolve(process.cwd(), 'logs');
+// Import log file in global app directory
+const APP_DIR_NAME = '.actual-monzo';
+
+/**
+ * Gets the base directory for config and logs
+ * Supports ACTUAL_MONZO_CONFIG_DIR environment variable for testing
+ */
+function getBaseDirectory(): string {
+  // Allow override via environment variable (for testing)
+  if (process.env.ACTUAL_MONZO_CONFIG_DIR) {
+    return process.env.ACTUAL_MONZO_CONFIG_DIR;
+  }
+  // Default: ~/.actual-monzo/
+  return path.join(homedir(), APP_DIR_NAME);
+}
+
+const LOG_DIR = path.join(getBaseDirectory(), 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'import.log');
 
 /**

@@ -3,6 +3,10 @@ import { beforeAll, afterAll, afterEach } from 'vitest';
 
 beforeAll(() => {
   // Global setup before all tests
+
+  // Use current working directory for config in tests
+  // This allows memfs mocking to work correctly
+  process.env.ACTUAL_MONZO_CONFIG_DIR = process.cwd();
 });
 
 afterAll(() => {

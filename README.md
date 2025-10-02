@@ -7,7 +7,9 @@ Automated synchronization between Monzo bank accounts and Actual Budget.
 - 🔐 **Secure OAuth Integration** - Connect to Monzo using official OAuth 2.0 flow
 - 💰 **Transaction Import** - Sync Monzo transactions to Actual Budget
 - 🗺️ **Account Mapping** - Configure which Monzo accounts sync to which Actual Budget accounts
-- 💾 **Persistent Configuration** - YAML-based config with secure permissions (chmod 600)
+- 💾 **Persistent Configuration** - Global config stored in `~/.actual-monzo/` with secure permissions (chmod 600)
+- 🌍 **Global Installation** - Install once, run from anywhere
+- 📋 **Import History** - Automatic logging of all imports in `~/.actual-monzo/logs/`
 
 ## Quick Start
 
@@ -29,6 +31,18 @@ Automated synchronization between Monzo bank accounts and Actual Budget.
 
 ### Installation
 
+#### Option 1: Global Installation (Recommended)
+
+```bash
+npm install -g actual-monzo
+
+# Then use from anywhere
+actual-monzo setup
+actual-monzo import
+```
+
+#### Option 2: Local Development
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/actual-monzo.git
@@ -39,6 +53,9 @@ pnpm install
 
 # Build the project
 pnpm build
+
+# Run locally
+node dist/index.js setup
 ```
 
 ### Setup
@@ -46,14 +63,14 @@ pnpm build
 Run the setup command to configure both Monzo and Actual Budget:
 
 ```bash
-node dist/index.js setup
+actual-monzo setup
 ```
 
 This will:
 1. Collect your Monzo OAuth credentials (Client ID & Secret)
 2. Open a browser for Monzo authorization
 3. Collect your Actual Budget server details
-4. Validate the connection and save to `config.yaml`
+4. Validate the connection and save to `~/.actual-monzo/config.yaml`
 
 **Security:** The config file is automatically set to `chmod 600` (owner read/write only).
 
@@ -61,7 +78,7 @@ This will:
 
 ```bash
 # Set custom port and run setup
-OAUTH_CALLBACK_PORT=9000 node dist/index.js setup
+OAUTH_CALLBACK_PORT=9000 actual-monzo setup
 ```
 
 Make sure your Monzo OAuth redirect URI matches: `http://localhost:{PORT}/callback`
@@ -71,7 +88,7 @@ Make sure your Monzo OAuth redirect URI matches: `http://localhost:{PORT}/callba
 Configure which Monzo accounts sync to which Actual Budget accounts:
 
 ```bash
-node dist/index.js map-accounts
+actual-monzo map-accounts
 ```
 
 This interactive command lets you select mappings between your Monzo accounts and Actual Budget accounts.
@@ -81,16 +98,27 @@ This interactive command lets you select mappings between your Monzo accounts an
 Import Monzo transactions into Actual Budget:
 
 ```bash
-node dist/index.js import
+actual-monzo import
 ```
 
 Options:
-- `--since <date>` - Import transactions from this date (default: 30 days ago)
-- `--account <id>` - Import only this Monzo account
+- `--start <date>` - Import transactions from this date (YYYY-MM-DD, default: 30 days ago)
+- `--end <date>` - Import transactions until this date (YYYY-MM-DD, default: today)
+- `--account <id>` - Import only this Monzo account ID
+- `--dry-run` - Preview import without making changes
 
 ## Configuration
 
-After setup, `config.yaml` is created in the project root:
+After setup, configuration files are stored in `~/.actual-monzo/`:
+
+```
+~/.actual-monzo/
+├── config.yaml          # Main configuration file
+└── logs/
+    └── import.log       # Import history log
+```
+
+**config.yaml** structure:
 
 ```yaml
 monzo:
@@ -115,7 +143,10 @@ accountMappings:
 setupCompletedAt: "2025-10-01T12:05:00.000Z"
 ```
 
-**⚠️ Important:** Never commit `config.yaml` to version control. It's already in `.gitignore`.
+**Security:**
+- Config file is automatically set to `chmod 600` (owner read/write only)
+- Stored in your home directory, isolated from project code
+- Never commit or share your config file
 
 ## Development
 
@@ -199,6 +230,8 @@ pnpm format
 
 ### Running Locally
 
+When developing locally, the CLI uses `process.cwd()` for config location (via `ACTUAL_MONZO_CONFIG_DIR` environment variable set in `tests/setup.ts`).
+
 ```bash
 # After building
 node dist/index.js setup
@@ -208,15 +241,19 @@ node dist/index.js import
 pnpm tsx src/index.ts setup
 ```
 
-### Global Installation (Optional)
+### Testing Global Installation
 
 ```bash
+# Build and link locally
 pnpm build
 pnpm link --global
 
 # Then use from anywhere
 actual-monzo setup
 actual-monzo import
+
+# Unlink when done testing
+pnpm unlink --global
 ```
 
 ## Contributing
@@ -248,17 +285,17 @@ actual-monzo import
 
 ## Troubleshooting
 
-### Command Not Found
+### Command Not Found (After Global Install)
 
 ```bash
-# Ensure built
-pnpm build
+# Check if installed globally
+npm list -g actual-monzo
 
-# Check dist exists
-ls dist/index.js
+# Reinstall if needed
+npm install -g actual-monzo
 
-# Run with explicit path
-node dist/index.js setup
+# Check npm global bin path is in PATH
+npm config get prefix
 ```
 
 ### Browser Doesn't Open (OAuth)
@@ -284,31 +321,41 @@ curl http://localhost:5006
 
 Monzo tokens expire after 6 hours. If you see authentication errors:
 - The CLI will auto-refresh tokens (when implemented)
-- For now, re-run setup: `node dist/index.js setup`
+- For now, re-run setup: `actual-monzo setup`
 
 ### Config File Issues
 
 ```bash
-# Check permissions
-ls -la config.yaml
+# Check config location and permissions
+ls -la ~/.actual-monzo/config.yaml
 
 # Should be: -rw------- (600)
 
-# Fix if needed
-chmod 600 config.yaml
+# Fix permissions if needed
+chmod 600 ~/.actual-monzo/config.yaml
 
-# Start fresh
-rm config.yaml
-node dist/index.js setup
+# Start fresh (removes all config and logs)
+rm -rf ~/.actual-monzo/
+actual-monzo setup
+```
+
+### Local Development Config Location
+
+When running locally via `node dist/index.js`, config is created in current directory for development convenience. For testing global behavior:
+
+```bash
+# Override config location temporarily
+ACTUAL_MONZO_CONFIG_DIR=~/.actual-monzo node dist/index.js setup
 ```
 
 ## Security
 
-- Config file uses `chmod 600` (owner read/write only)
-- Never commit `config.yaml` (.gitignore protects this)
+- Config file stored in `~/.actual-monzo/` with `chmod 600` (owner read/write only)
+- Config location isolated from project code (not in git repository)
 - OAuth uses CSRF protection (state parameter)
 - Localhost-only OAuth callback server
 - Tokens stored in plain text (acceptable for read-only banking access)
+- Environment variable `ACTUAL_MONZO_CONFIG_DIR` allows overriding config location for testing
 
 ## License
 

@@ -36,7 +36,10 @@ export default defineConfig({
         'open',
         '@actual-app/api',
         /^node:/
-      ]
+      ],
+      output: {
+        banner: '#!/usr/bin/env node'
+      }
     },
     target: 'node18',
     outDir: 'dist',
