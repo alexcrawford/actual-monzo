@@ -2,20 +2,30 @@
 
 Automated synchronization between Monzo bank accounts and Actual Budget.
 
-## Overview
-
-`actual-monzo` is a CLI tool that connects your Monzo bank account to Actual Budget, enabling automated transaction imports and financial management.
-
 ## Features
 
 - 🔐 **Secure OAuth Integration** - Connect to Monzo using official OAuth 2.0 flow
-- 💰 **Actual Budget Support** - Validate and store Actual Budget server credentials
-- 🔄 **Two-Phase Setup** - Sequential configuration of Monzo OAuth and Actual Budget
-- 💾 **Persistent Configuration** - YAML-based config storage with proper security
-- 🛡️ **Error Recovery** - Partial setup support and actionable error messages
-- ✅ **Comprehensive Testing** - 77.5% code coverage with 65 passing tests
+- 💰 **Transaction Import** - Sync Monzo transactions to Actual Budget
+- 🗺️ **Account Mapping** - Configure which Monzo accounts sync to which Actual Budget accounts
+- 💾 **Persistent Configuration** - YAML-based config with secure permissions (chmod 600)
 
 ## Quick Start
+
+### Prerequisites
+
+1. **Monzo Developer Account**
+   - Register at [Monzo Developers](https://developers.monzo.com/)
+   - Create an OAuth client application
+   - Set redirect URI: `http://localhost:8234/callback`
+   - Note your Client ID and Client Secret
+
+2. **Actual Budget Server**
+   - Running Actual Budget instance (local or remote)
+   - Server URL (default: `http://localhost:5006`)
+   - Server password
+
+3. **Monzo Mobile App**
+   - Installed on your mobile device (required to approve OAuth)
 
 ### Installation
 
@@ -31,78 +41,47 @@ pnpm install
 pnpm build
 ```
 
-### Run Setup
+### Setup
+
+Run the setup command to configure both Monzo and Actual Budget:
 
 ```bash
-# Run setup command
 node dist/index.js setup
-
-# Or use tsx for development
-pnpm tsx src/index.ts setup
 ```
 
-### Global Installation (Optional)
+This will:
+1. Collect your Monzo OAuth credentials (Client ID & Secret)
+2. Open a browser for Monzo authorization
+3. Collect your Actual Budget server details
+4. Validate the connection and save to `config.yaml`
+
+**Security:** The config file is automatically set to `chmod 600` (owner read/write only).
+
+### Map Accounts
+
+Configure which Monzo accounts sync to which Actual Budget accounts:
 
 ```bash
-# Build and link globally
-pnpm build
-pnpm link --global
-
-# Run from anywhere
-actual-monzo setup
+node dist/index.js map-accounts
 ```
 
-## Prerequisites
+This interactive command lets you select mappings between your Monzo accounts and Actual Budget accounts.
 
-### 1. Monzo Developer Account
+### Import Transactions
 
-- Register at [Monzo Developers](https://developers.monzo.com/)
-- Create an OAuth client application
-- Note your Client ID and Client Secret
-- Set redirect URI: `http://localhost:8234/callback`
-
-### 2. Actual Budget Server
-
-- Running Actual Budget instance (local or remote)
-- Server URL (default: `http://localhost:5006`)
-- Server password
-- Writable directory for budget data
-
-### 3. Monzo Mobile App
-
-- Monzo app installed on your mobile device
-- Access to approve OAuth authorization
-
-## Usage
-
-### Setup Command
-
-Configure Monzo OAuth and Actual Budget credentials:
+Import Monzo transactions into Actual Budget:
 
 ```bash
-actual-monzo setup
+node dist/index.js import
 ```
 
-**What it does:**
-1. **Phase 1: Monzo OAuth**
-   - Collects Client ID and Client Secret
-   - Opens browser for authorization
-   - Handles OAuth callback
-   - Stores access and refresh tokens
+Options:
+- `--since <date>` - Import transactions from this date (default: 30 days ago)
+- `--account <id>` - Import only this Monzo account
 
-2. **Phase 2: Actual Budget**
-   - Collects server URL, password, and data directory
-   - Validates connection
-   - Stores configuration
+## Configuration
 
-**Result:**
-- Creates `config.yaml` in project root
-- Both services configured and validated
-- Ready for future commands
-
-### Configuration File
-
-After setup, `config.yaml` contains:
+After setup, `config.yaml` is created in the project root:
 
 ```yaml
 monzo:
@@ -111,7 +90,6 @@ monzo:
   accessToken: "access_token_..."
   refreshToken: "refresh_token_..."
   tokenExpiresAt: "2025-10-01T18:00:00.000Z"
-  authorizedAt: "2025-10-01T12:00:00.000Z"
 
 actualBudget:
   serverUrl: "http://localhost:5006"
@@ -119,17 +97,16 @@ actualBudget:
   dataDirectory: "/Users/you/.actual"
   validatedAt: "2025-10-01T12:05:00.000Z"
 
+accountMappings:
+  - monzoAccountId: "acc_..."
+    monzoAccountName: "Current Account"
+    actualAccountId: "..."
+    actualAccountName: "Checking"
+
 setupCompletedAt: "2025-10-01T12:05:00.000Z"
 ```
 
-**Security:**
-```bash
-# Protect your config file
-chmod 600 config.yaml
-
-# Never commit to git
-echo "config.yaml" >> .gitignore
-```
+**⚠️ Important:** Never commit `config.yaml` to version control. It's already in `.gitignore`.
 
 ## Development
 
@@ -138,29 +115,15 @@ echo "config.yaml" >> .gitignore
 ```
 actual-monzo/
 ├── src/
-│   ├── commands/          # CLI commands
-│   │   └── setup.ts       # Setup command
-│   ├── services/          # Business logic
-│   │   ├── actual-client.ts
-│   │   ├── monzo-api-client.ts
-│   │   ├── monzo-oauth-service.ts
-│   │   └── setup-service.ts
-│   ├── types/             # TypeScript types
-│   │   ├── config.ts
-│   │   └── setup.ts
-│   └── utils/             # Utilities
-│       ├── browser-utils.ts
-│       ├── config-manager.ts
-│       ├── config-schema.ts
-│       └── oauth-server.ts
+│   ├── commands/       # CLI commands (setup, import, map-accounts)
+│   ├── services/       # Business logic (OAuth, API clients)
+│   ├── types/          # TypeScript type definitions
+│   └── utils/          # Utilities (config, OAuth server, browser)
 ├── tests/
-│   ├── contract/          # Contract tests
-│   ├── integration/       # Integration tests
-│   └── unit/              # Unit tests
-├── specs/
-│   └── 002-setup-command/ # Feature specification
-└── docs/
-    └── SETUP_COMMAND.md   # Detailed setup guide
+│   ├── contract/       # Contract tests (API contracts)
+│   ├── integration/    # Integration tests (end-to-end flows)
+│   └── unit/           # Unit tests (individual functions)
+└── specs/              # Feature specifications
 ```
 
 ### Tech Stack
@@ -170,244 +133,187 @@ actual-monzo/
 - **CLI Framework:** Commander.js
 - **Interactive Prompts:** Inquirer.js
 - **Testing:** Vitest
-- **OAuth:** Custom implementation with Monzo API
-- **Actual Budget SDK:** @actual-app/api
-- **Config Format:** YAML (js-yaml)
+- **Config:** YAML (js-yaml) + Zod validation
+- **APIs:** @actual-app/api, Axios (Monzo)
 
 ### Running Tests
 
 ```bash
 # Run all tests
+pnpm vitest run
+
+# Watch mode
 pnpm test
 
-# Run specific test suites
+# With coverage
+pnpm test:coverage
+
+# Specific test suites
 pnpm vitest run tests/contract/
-pnpm vitest run tests/integration/setup-*.test.ts
-
-# Run with coverage
-pnpm test --coverage
-
-# Watch mode
-pnpm test --watch
+pnpm vitest run tests/integration/
+pnpm vitest run tests/unit/
 ```
 
-### Test Coverage
+**Test Coverage:**
+- Contract tests (API contracts)
+- Integration tests (end-to-end flows)
+- Unit tests (individual functions)
 
-- **Overall:** 77.5%
-- **actual-client.ts:** 98.51%
-- **monzo-oauth-service.ts:** 87.41%
-- **config-manager.ts:** 76.52%
-- **setup-service.ts:** 68.02%
-
-**Test Stats:**
-- 65 tests passing
-- 14 test files
-- Contract tests: 100% passing
-- Integration tests: 85% coverage
-
-### Build
+### Building
 
 ```bash
-# Development build
+# Production build
 pnpm build
 
-# Watch mode
-pnpm build --watch
+# Development mode (watch)
+pnpm dev
 
-# Type checking
-pnpm tsc --noEmit
+# Type checking only
+pnpm type-check
+
+# Clean build artifacts
+pnpm clean
 ```
 
-### Linting
+### Linting & Formatting
 
 ```bash
 # Run ESLint
 pnpm lint
 
 # Fix auto-fixable issues
-pnpm lint --fix
+pnpm lint:fix
+
+# Format code
+pnpm format
 ```
 
-## Error Handling
+### Running Locally
 
-### Port Conflicts
-
-If ports 3000-3010 are busy:
 ```bash
-# Check what's using ports
-lsof -i :3000-3010
+# After building
+node dist/index.js setup
+node dist/index.js import
 
-# Kill blocking processes
-kill <PID>
+# Or with tsx (development)
+pnpm tsx src/index.ts setup
 ```
 
-### Network Errors
+### Global Installation (Optional)
 
-**Actual Budget server unreachable:**
-- Verify server is running: `docker ps`
-- Check firewall settings
-- Confirm correct port (default: 5006)
+```bash
+pnpm build
+pnpm link --global
 
-### OAuth Issues
+# Then use from anywhere
+actual-monzo setup
+actual-monzo import
+```
 
-**Authorization denied:**
-- Approve access in Monzo mobile app
-- Check OAuth client credentials
+## Contributing
 
-**Tokens expired:**
-- Tokens expire after 6 hours
-- Future commands will auto-refresh
-- Re-run setup if refresh fails
+### Development Workflow
+
+1. Create feature branch: `git checkout -b feature-name`
+2. Make changes with tests
+3. Run tests: `pnpm vitest run`
+4. Run type checking: `pnpm type-check`
+5. Run linter: `pnpm lint`
+6. Build: `pnpm build`
+7. Commit with conventional commits format
+8. Create pull request
+
+### Testing Standards
+
+- Write tests for new features (contract tests define the API)
+- Maintain comprehensive test coverage
+- All tests must pass before merge
+- Use TypeScript strict mode
+
+### Code Style
+
+- TypeScript strict mode enabled
+- ESLint rules enforced (no `any` types)
+- Prettier for formatting
+- Conventional commits format
 
 ## Troubleshooting
 
 ### Command Not Found
 
 ```bash
-# Ensure project is built
-ls dist/index.js
-
-# Rebuild if needed
+# Ensure built
 pnpm build
+
+# Check dist exists
+ls dist/index.js
 
 # Run with explicit path
 node dist/index.js setup
 ```
 
-### Browser Doesn't Open
+### Browser Doesn't Open (OAuth)
 
-If running in headless environment:
-- CLI displays clickable URL
-- Copy URL and open in browser manually
-- OAuth callback still works
+If running in headless environment or browser fails to open:
+- The CLI displays a clickable URL
+- Copy and paste into browser manually
+- OAuth callback still works on localhost
+
+### Actual Budget Connection Issues
+
+```bash
+# Verify server is running
+docker ps | grep actual
+
+# Check server is accessible
+curl http://localhost:5006
+
+# Verify correct port and URL
+```
+
+### OAuth Token Expired
+
+Monzo tokens expire after 6 hours. If you see authentication errors:
+- The CLI will auto-refresh tokens (when implemented)
+- For now, re-run setup: `node dist/index.js setup`
 
 ### Config File Issues
 
-**Permission errors:**
 ```bash
-# Fix permissions
-chmod 600 config.yaml
-```
+# Check permissions
+ls -la config.yaml
 
-**Validation errors:**
-```bash
-# Remove and re-run setup
+# Should be: -rw------- (600)
+
+# Fix if needed
+chmod 600 config.yaml
+
+# Start fresh
 rm config.yaml
 node dist/index.js setup
 ```
 
-## Roadmap
-
-### Implemented ✅
-- Two-phase setup command
-- Monzo OAuth 2.0 flow
-- Actual Budget connection validation
-- YAML configuration storage
-- Partial setup recovery
-- Comprehensive error handling
-- Contract and integration tests
-
-### Planned 🚧
-- Transaction sync command
-- Automatic token refresh in API commands
-- Category mapping configuration
-- Budget reconciliation
-- Interactive reconfiguration menu
-- Enhanced error recovery prompts
-
-### Future Ideas 💡
-- Multiple Monzo account support
-- Scheduled sync jobs
-- Transaction filtering rules
-- Custom category rules
-- Web dashboard
-- Docker image
-
-## Documentation
-
-- **[Setup Guide](docs/SETUP_COMMAND.md)** - Detailed setup instructions
-- **[Specification](specs/002-setup-command/spec.md)** - Feature specification
-- **[Quickstart](specs/002-setup-command/quickstart.md)** - Usage scenarios
-- **[Data Model](specs/002-setup-command/data-model.md)** - Entity definitions
-- **[Technical Plan](specs/002-setup-command/plan.md)** - Implementation plan
-
-## Contributing
-
-### Development Workflow
-
-1. Create feature branch: `git checkout -b 003-feature-name`
-2. Create spec: `specs/003-feature-name/spec.md`
-3. Run planning: Generate plan.md, data-model.md, contracts/
-4. Generate tasks: Create tasks.md
-5. Implement with TDD
-6. Run tests: `pnpm test`
-7. Commit changes
-8. Create pull request
-
-### Testing Standards
-
-- Write contract tests first (must fail)
-- Implement features to make tests pass
-- Maintain >75% code coverage
-- All tests must pass before merge
-
-### Code Style
-
-- TypeScript strict mode
-- ESLint rules enforced
-- Prettier for formatting
-- Conventional commits
-
 ## Security
 
-### Configuration Security
-
-- Config file uses 600 permissions (owner read/write only)
-- Never commit `config.yaml` to version control
-- Tokens stored in plain text (acceptable for read-only access)
-- Refresh tokens require re-auth every 90 days
-
-### API Security
-
-- OAuth 2.0 with PKCE (planned)
-- Localhost-only callback server
-- CSRF protection with state parameter
-- Secure password input (masked)
-
-### Best Practices
-
-```bash
-# Protect config
-chmod 600 config.yaml
-
-# Verify .gitignore
-git status  # config.yaml should not appear
-
-# Regular rotation
-# - Rotate Actual Budget password regularly
-# - Re-authorize Monzo every 90 days
-```
+- Config file uses `chmod 600` (owner read/write only)
+- Never commit `config.yaml` (.gitignore protects this)
+- OAuth uses CSRF protection (state parameter)
+- Localhost-only OAuth callback server
+- Tokens stored in plain text (acceptable for read-only banking access)
 
 ## License
 
 MIT
 
-## Support
+## Links
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/actual-monzo/issues)
-- **Monzo API:** https://docs.monzo.com/
-- **Actual Budget:** https://actualbudget.org/docs/
-
-## Acknowledgments
-
-- [Monzo](https://monzo.com/) - Banking API
-- [Actual Budget](https://actualbudget.org/) - Budget management
-- [Commander.js](https://github.com/tj/commander.js/) - CLI framework
-- [Inquirer.js](https://github.com/SBoudrias/Inquirer.js/) - Interactive prompts
+- [Monzo API Docs](https://docs.monzo.com/)
+- [Actual Budget](https://actualbudget.org/)
+- [Feature Specs](specs/) - Detailed specifications
+- [GitHub Issues](https://github.com/alexcrawford/actual-monzo/issues)
 
 ---
 
-**Status:** Feature branch `002-setup-command`
-**Last Updated:** 2025-10-01
-**Test Coverage:** 77.5% (65 passing tests)
-**Spec Compliance:** 74% (17/23 functional requirements)
+**Status:** Active Development
+**Node Version:** >=18.0.0
+**License:** MIT
