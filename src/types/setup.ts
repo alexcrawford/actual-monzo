@@ -9,7 +9,7 @@ export enum ConfigState {
   PARTIAL_ACTUAL_ONLY = 'partial_actual_only',
   COMPLETE = 'complete',
   EXPIRED_TOKENS = 'expired_tokens',
-  MALFORMED = 'malformed'
+  MALFORMED = 'malformed',
 }
 
 export interface SetupError {
@@ -41,7 +41,7 @@ export enum SetupErrorCode {
   VALIDATION_ERROR = 'validation_error',
 
   // User errors
-  USER_CANCELLED = 'user_cancelled'
+  USER_CANCELLED = 'user_cancelled',
 }
 
 export interface SetupPhaseResult<T = unknown> {
@@ -74,7 +74,7 @@ export enum RecoveryAction {
   CHANGE_PASSWORD = 'change_password',
   CHANGE_DIRECTORY = 'change_directory',
   DELETE_CONFIG = 'delete_config',
-  EXIT = 'exit'
+  EXIT = 'exit',
 }
 
 export interface ValidationResult {

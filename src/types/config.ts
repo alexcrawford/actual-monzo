@@ -36,7 +36,7 @@ export enum SetupPhase {
   MONZO_OAUTH = 'monzo_oauth',
   ACTUAL_CREDENTIALS = 'actual_credentials',
   ACTUAL_VALIDATION = 'actual_validation',
-  COMPLETE = 'complete'
+  COMPLETE = 'complete',
 }
 
 export interface SetupSession {

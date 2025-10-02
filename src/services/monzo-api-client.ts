@@ -24,8 +24,8 @@ export class MonzoApiClient {
     try {
       const response = await axios.get<WhoAmIResponse>(`${MONZO_API_BASE}/ping/whoami`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       return response.data;
@@ -53,12 +53,12 @@ export class MonzoApiClient {
           client_id: params.clientId,
           client_secret: params.clientSecret,
           code: params.code,
-          redirect_uri: params.redirectUri
+          redirect_uri: params.redirectUri,
         },
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
         }
       );
 
@@ -98,8 +98,8 @@ export class MonzoApiClient {
     try {
       const response = await axios.get(`${MONZO_API_BASE}/accounts`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       return response.data.accounts ?? [];
@@ -148,14 +148,14 @@ export class MonzoApiClient {
           since: currentSince,
           before,
           'expand[]': 'merchant',
-          limit: pageLimit
+          limit: pageLimit,
         };
 
         const response = await axios.get(`${MONZO_API_BASE}/transactions`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`
+            Authorization: `Bearer ${accessToken}`,
           },
-          params
+          params,
         });
 
         const transactions = response.data.transactions ?? [];
@@ -179,7 +179,6 @@ export class MonzoApiClient {
         }
 
         retryCount = 0; // Reset retry count on success
-
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError;
@@ -187,8 +186,7 @@ export class MonzoApiClient {
           // Handle 401 Unauthorized - token expired
           if (axiosError.response?.status === 401) {
             throw new Error(
-              'Monzo access token expired. Please re-authenticate:\n' +
-              '  actual-monzo setup'
+              'Monzo access token expired. Please re-authenticate:\n' + '  actual-monzo setup'
             );
           }
 
@@ -200,9 +198,7 @@ export class MonzoApiClient {
               retryCount++;
               continue; // Retry same request
             }
-            throw new Error(
-              'Monzo API rate limit exceeded. Please try again later.'
-            );
+            throw new Error('Monzo API rate limit exceeded. Please try again later.');
           }
 
           // Handle 500 Server Error - single retry
@@ -212,9 +208,7 @@ export class MonzoApiClient {
               retryCount++;
               continue; // Retry once
             }
-            throw new Error(
-              'Monzo API is currently unavailable. Please try again later.'
-            );
+            throw new Error('Monzo API is currently unavailable. Please try again later.');
           }
 
           throw new Error(`Monzo API error: ${axiosError.message}`);

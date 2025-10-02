@@ -13,13 +13,13 @@ import path from 'path';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn(),
-  shutdown: vi.fn().mockResolvedValue(undefined as any)
+  shutdown: vi.fn().mockResolvedValue(undefined as any),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -46,8 +46,8 @@ describe('Integration: Actual Budget Directory Error (T033)', () => {
         accessToken: 'access_token_12345678901234567890',
         refreshToken: 'refresh_token_12345678901234567890',
         tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        authorizedAt: new Date().toISOString()
-      }
+        authorizedAt: new Date().toISOString(),
+      },
     };
 
     const configPath = path.join(process.cwd(), 'config.yaml');
@@ -65,7 +65,7 @@ describe('Integration: Actual Budget Directory Error (T033)', () => {
     const firstAttempt = await service.setupActualBudget({
       serverUrl: 'http://localhost:5006',
       password: 'test_password',
-      dataDirectory: '/root/.actual-budget/data' // Not writable
+      dataDirectory: '/root/.actual-budget/data', // Not writable
     });
 
     expect(firstAttempt.success).toBe(false);
@@ -76,7 +76,7 @@ describe('Integration: Actual Budget Directory Error (T033)', () => {
     const secondAttempt = await service.setupActualBudget({
       serverUrl: 'http://localhost:5006',
       password: 'test_password',
-      dataDirectory: '/tmp/actual-budget/data' // Writable
+      dataDirectory: '/tmp/actual-budget/data', // Writable
     });
 
     expect(secondAttempt.success).toBe(true);
@@ -99,7 +99,7 @@ describe('Integration: Actual Budget Directory Error (T033)', () => {
     const result = await service.setupActualBudget({
       serverUrl: 'http://budget.example.com:5006',
       password: 'my_secure_password',
-      dataDirectory: '/root/no-access'
+      dataDirectory: '/root/no-access',
     });
 
     // Should fail but preserve input params for retry
@@ -124,7 +124,7 @@ describe('Integration: Actual Budget Directory Error (T033)', () => {
     const result = await service.setupActualBudget({
       serverUrl: 'http://localhost:5006',
       password: 'password',
-      dataDirectory: '/invalid/path'
+      dataDirectory: '/invalid/path',
     });
 
     expect(result.success).toBe(false);

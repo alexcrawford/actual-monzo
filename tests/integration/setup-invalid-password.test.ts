@@ -13,13 +13,13 @@ import { SetupErrorCode } from '../../src/types/setup';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn(),
-  shutdown: vi.fn().mockResolvedValue(undefined as any)
+  shutdown: vi.fn().mockResolvedValue(undefined as any),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -47,7 +47,7 @@ describe('Integration: Invalid Password Recovery', () => {
     const actualParams = {
       serverUrl: 'http://localhost:5006',
       password: 'wrong_password',
-      dataDirectory: '/tmp/actual'
+      dataDirectory: '/tmp/actual',
     };
 
     const result = await service.setupActualBudget(actualParams);
@@ -74,7 +74,7 @@ describe('Integration: Invalid Password Recovery', () => {
     const wrongParams = {
       serverUrl: 'http://localhost:5006',
       password: 'wrong_password',
-      dataDirectory: '/tmp/actual'
+      dataDirectory: '/tmp/actual',
     };
 
     const failedResult = await service.setupActualBudget(wrongParams);
@@ -88,7 +88,7 @@ describe('Integration: Invalid Password Recovery', () => {
     const correctParams = {
       serverUrl: 'http://localhost:5006',
       password: 'correct_password',
-      dataDirectory: '/tmp/actual'
+      dataDirectory: '/tmp/actual',
     };
 
     const successResult = await service.setupActualBudget(correctParams);
@@ -113,7 +113,7 @@ describe('Integration: Invalid Password Recovery', () => {
       accessToken: 'access_token_12345678901234567890',
       refreshToken: 'refresh_token_12345678901234567890',
       tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-      authorizedAt: new Date().toISOString()
+      authorizedAt: new Date().toISOString(),
     };
 
     await service.saveMonzoConfig(monzoConfig);
@@ -126,7 +126,7 @@ describe('Integration: Invalid Password Recovery', () => {
     const actualParams = {
       serverUrl: 'http://localhost:5006',
       password: 'wrong_password',
-      dataDirectory: '/tmp/actual'
+      dataDirectory: '/tmp/actual',
     };
 
     const result = await service.setupActualBudget(actualParams);
@@ -155,7 +155,7 @@ describe('Integration: Invalid Password Recovery', () => {
     const actualParams = {
       serverUrl: 'http://localhost:5006',
       password: 'wrong_password',
-      dataDirectory: '/tmp/actual'
+      dataDirectory: '/tmp/actual',
     };
 
     const result = await service.setupActualBudget(actualParams);

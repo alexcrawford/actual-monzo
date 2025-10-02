@@ -53,7 +53,8 @@ export function createProgressTracker(
 
     fail(message?: string) {
       const elapsed = Date.now() - this.startTime.getTime();
-      const finalMessage = message ?? `Failed after ${formatDuration(elapsed)} (step ${this.current}/${this.total})`;
+      const finalMessage =
+        message ?? `Failed after ${formatDuration(elapsed)} (step ${this.current}/${this.total})`;
       this.spinner.fail(finalMessage);
     },
 
@@ -63,7 +64,7 @@ export function createProgressTracker(
 
     info(message?: string) {
       this.spinner.info(message ?? 'Information');
-    }
+    },
   };
 }
 
@@ -116,10 +117,7 @@ export const logVerbose = (message: string, verbose = false): void => {
 /**
  * Prompts user for confirmation with styled text
  */
-export async function confirmAction(
-  message: string,
-  defaultValue = false
-): Promise<boolean> {
+export async function confirmAction(message: string, defaultValue = false): Promise<boolean> {
   const { default: inquirer } = await import('inquirer');
 
   const answer = await inquirer.prompt([
@@ -127,8 +125,8 @@ export async function confirmAction(
       type: 'confirm',
       name: 'confirmed',
       message: chalk.cyan(message),
-      default: defaultValue
-    }
+      default: defaultValue,
+    },
   ]);
 
   return answer.confirmed;
@@ -150,8 +148,8 @@ export async function promptForInput(
       name: 'value',
       message: chalk.cyan(message),
       default: defaultValue,
-      validate: validate ?? ((input: string) => input.trim().length > 0 || 'Input cannot be empty')
-    }
+      validate: validate ?? ((input: string) => input.trim().length > 0 || 'Input cannot be empty'),
+    },
   ]);
 
   return answer.value;
@@ -173,8 +171,8 @@ export async function promptForSelection<T extends string>(
       name: 'selection',
       message: chalk.cyan(message),
       choices,
-      default: defaultValue
-    }
+      default: defaultValue,
+    },
   ]);
 
   return answer.selection;
@@ -188,9 +186,12 @@ export function displayTable(data: Record<string, string | number | boolean>): v
 
   Object.entries(data).forEach(([key, value]) => {
     const paddedKey = key.padEnd(maxKeyLength);
-    const formattedValue = typeof value === 'boolean'
-      ? (value ? chalk.green('✓ Yes') : chalk.red('✗ No'))
-      : chalk.white(String(value));
+    const formattedValue =
+      typeof value === 'boolean'
+        ? value
+          ? chalk.green('✓ Yes')
+          : chalk.red('✗ No')
+        : chalk.white(String(value));
 
     console.log(`  ${chalk.cyan(paddedKey)} : ${formattedValue}`);
   });
@@ -216,9 +217,7 @@ export function logSeparator(char = '─', width = 50): void {
 /**
  * Suppress all console output during callback execution
  */
-export async function suppressConsole<T>(
-  callback: () => T | Promise<T>
-): Promise<T> {
+export async function suppressConsole<T>(callback: () => T | Promise<T>): Promise<T> {
   const originalLog = console.log;
   const originalInfo = console.info;
   const originalWarn = console.warn;
@@ -246,10 +245,7 @@ export async function suppressConsole<T>(
 /**
  * Groups related log messages with indentation
  */
-export function withIndentation<T>(
-  callback: () => T | Promise<T>,
-  indent = '  '
-): T | Promise<T> {
+export function withIndentation<T>(callback: () => T | Promise<T>, indent = '  '): T | Promise<T> {
   const originalLog = console.log;
 
   console.log = (...args) => {
@@ -310,7 +306,7 @@ export function validateRequiredArgs(
 
   return {
     valid: missing.length === 0,
-    missing
+    missing,
   };
 }
 

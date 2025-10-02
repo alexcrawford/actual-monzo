@@ -14,15 +14,14 @@ import path from 'path';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn().mockResolvedValue(undefined as any),
-  shutdown: vi.fn().mockResolvedValue(undefined as any)
+  shutdown: vi.fn().mockResolvedValue(undefined as any),
 }));
-
 
 describe('Integration: Expired Tokens Recovery', () => {
   beforeEach(() => {
@@ -48,15 +47,15 @@ describe('Integration: Expired Tokens Recovery', () => {
         accessToken: 'expired_access_token',
         refreshToken: 'expired_refresh_token',
         tokenExpiresAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        authorizedAt: new Date(Date.now() - 86400000).toISOString()
+        authorizedAt: new Date(Date.now() - 86400000).toISOString(),
       },
       actualBudget: {
         serverUrl: 'http://localhost:5006',
         password: 'test_password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       },
-      setupCompletedAt: new Date(Date.now() - 86400000).toISOString()
+      setupCompletedAt: new Date(Date.now() - 86400000).toISOString(),
     };
 
     const configPath = path.join(process.cwd(), 'config.yaml');
@@ -79,28 +78,26 @@ describe('Integration: Expired Tokens Recovery', () => {
         accessToken: 'expired_access_token',
         refreshToken: 'expired_refresh_token',
         tokenExpiresAt: new Date(Date.now() - 3600000).toISOString(),
-        authorizedAt: new Date(Date.now() - 86400000).toISOString()
+        authorizedAt: new Date(Date.now() - 86400000).toISOString(),
       },
       actualBudget: {
         serverUrl: 'http://localhost:5006',
         password: 'test_password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date().toISOString()
-      }
+        validatedAt: new Date().toISOString(),
+      },
     };
 
     const configPath = path.join(process.cwd(), 'config.yaml');
     vol.writeFileSync(configPath, dump(expiredConfig, { indent: 2 }));
 
     // Mock OAuth re-authentication
-    nock('https://api.monzo.com')
-      .post('/oauth2/token')
-      .reply(200, {
-        access_token: 'new_access_token_12345678901234567890',
-        refresh_token: 'new_refresh_token_12345678901234567890',
-        expires_in: 21600,
-        token_type: 'Bearer'
-      });
+    nock('https://api.monzo.com').post('/oauth2/token').reply(200, {
+      access_token: 'new_access_token_12345678901234567890',
+      refresh_token: 'new_refresh_token_12345678901234567890',
+      expires_in: 21600,
+      token_type: 'Bearer',
+    });
 
     // Re-authenticate with new tokens
     const newMonzoConfig = {
@@ -109,12 +106,12 @@ describe('Integration: Expired Tokens Recovery', () => {
       accessToken: 'new_access_token_12345678901234567890',
       refreshToken: 'new_refresh_token_12345678901234567890',
       tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-      authorizedAt: new Date().toISOString()
+      authorizedAt: new Date().toISOString(),
     };
 
     const result = await service.runFullSetup({
       monzo: newMonzoConfig,
-      actualBudget: expiredConfig.actualBudget
+      actualBudget: expiredConfig.actualBudget,
     });
 
     // Assertions

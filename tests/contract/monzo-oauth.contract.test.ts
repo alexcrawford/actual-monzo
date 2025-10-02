@@ -56,20 +56,20 @@ describe('Monzo OAuth Contract', () => {
           client_id: clientId,
           client_secret: clientSecret,
           code: authCode,
-          redirect_uri: redirectUri
+          redirect_uri: redirectUri,
         })
         .reply(200, {
           access_token: 'access_token_new',
           refresh_token: 'refresh_token_new',
           expires_in: 21600,
-          token_type: 'Bearer'
+          token_type: 'Bearer',
         });
 
       const result = await service.exchangeAuthorizationCode({
         code: authCode,
         clientId,
         clientSecret,
-        redirectUri
+        redirectUri,
       });
 
       expect(result.access_token).toBe('access_token_new');
@@ -81,19 +81,17 @@ describe('Monzo OAuth Contract', () => {
     it('should handle invalid grant error', async () => {
       const invalidCode = 'invalid_code';
 
-      nock('https://api.monzo.com')
-        .post('/oauth2/token')
-        .reply(400, {
-          error: 'invalid_grant',
-          error_description: 'The authorization code is invalid or expired'
-        });
+      nock('https://api.monzo.com').post('/oauth2/token').reply(400, {
+        error: 'invalid_grant',
+        error_description: 'The authorization code is invalid or expired',
+      });
 
       await expect(
         service.exchangeAuthorizationCode({
           code: invalidCode,
           clientId,
           clientSecret,
-          redirectUri
+          redirectUri,
         })
       ).rejects.toThrow('invalid_grant');
     });

@@ -5,7 +5,12 @@
 
 import { MonzoOAuthService } from './monzo-oauth-service';
 import { ActualClient } from './actual-client';
-import { saveConfig as saveConfigFile, loadConfig as loadConfigFile, configExists, getConfigPath } from '../utils/config-manager';
+import {
+  saveConfig as saveConfigFile,
+  loadConfig as loadConfigFile,
+  configExists,
+  getConfigPath,
+} from '../utils/config-manager';
 import type { Config, MonzoConfiguration, ActualBudgetConfiguration } from '../types/config';
 import type { SetupSession, SetupPhaseResult } from '../types/setup';
 import { SetupErrorCode, ConfigState } from '../types/setup';
@@ -47,7 +52,7 @@ export class SetupService {
 
       return {
         success: true,
-        data: monzoConfig
+        data: monzoConfig,
       };
     } catch (error) {
       return {
@@ -55,8 +60,8 @@ export class SetupService {
         error: {
           code: SetupErrorCode.OAUTH_FAILED,
           message: error instanceof Error ? error.message : 'OAuth flow failed',
-          originalError: error instanceof Error ? error : undefined
-        }
+          originalError: error instanceof Error ? error : undefined,
+        },
       };
     }
   }
@@ -65,7 +70,9 @@ export class SetupService {
    * Phase 2: Actual Budget Connection Validation
    * Returns validated config that can be saved independently
    */
-  async setupActualBudget(params: ActualSetupParams): Promise<SetupPhaseResult<ActualBudgetConfiguration>> {
+  async setupActualBudget(
+    params: ActualSetupParams
+  ): Promise<SetupPhaseResult<ActualBudgetConfiguration>> {
     const result = await this.actualClient.validateConnection(
       params.serverUrl,
       params.password,
@@ -75,7 +82,7 @@ export class SetupService {
     if (!result.success) {
       return {
         success: false,
-        error: result.error!
+        error: result.error!,
       };
     }
 
@@ -85,8 +92,8 @@ export class SetupService {
         serverUrl: params.serverUrl,
         password: params.password,
         dataDirectory: params.dataDirectory,
-        validatedAt: result.validatedAt
-      }
+        validatedAt: result.validatedAt,
+      },
     };
   }
 
@@ -102,7 +109,7 @@ export class SetupService {
       state: ConfigState.UNCONFIGURED,
       monzoPhase: { success: false },
       actualPhase: { success: false },
-      overallSuccess: false
+      overallSuccess: false,
     };
 
     // Phase 1: Monzo OAuth
@@ -119,8 +126,8 @@ export class SetupService {
       actualBudget: {
         serverUrl: actualParams.serverUrl,
         password: actualParams.password,
-        dataDirectory: actualParams.dataDirectory
-      }
+        dataDirectory: actualParams.dataDirectory,
+      },
     };
 
     await saveConfigFile(partialConfig);
@@ -132,7 +139,9 @@ export class SetupService {
 
     if (!session.actualPhase.success) {
       console.log(chalk.yellow('\n⚠️  Actual Budget validation failed'));
-      console.log(chalk.yellow('Monzo configuration has been saved. You can retry Actual Budget setup later.'));
+      console.log(
+        chalk.yellow('Monzo configuration has been saved. You can retry Actual Budget setup later.')
+      );
       return session;
     }
 
@@ -140,7 +149,7 @@ export class SetupService {
     const completeConfig: Config = {
       monzo: session.monzoPhase.data!,
       actualBudget: session.actualPhase.data!,
-      setupCompletedAt: new Date().toISOString()
+      setupCompletedAt: new Date().toISOString(),
     };
 
     await saveConfigFile(completeConfig);
@@ -186,7 +195,7 @@ export class SetupService {
         monzoPhase: { success: true, data: existingConfig.monzo },
         actualPhase: { success: true, data: existingConfig.actualBudget },
         overallSuccess: true,
-        completedAt: existingConfig.setupCompletedAt
+        completedAt: existingConfig.setupCompletedAt,
       };
     }
 
@@ -195,7 +204,7 @@ export class SetupService {
       state: ConfigState.PARTIAL_MONZO_ONLY,
       monzoPhase: { success: true, data: existingConfig.monzo },
       actualPhase: { success: false },
-      overallSuccess: false
+      overallSuccess: false,
     };
 
     session.actualPhase = await this.setupActualBudget(actualParams);
@@ -209,7 +218,7 @@ export class SetupService {
     const completeConfig: Config = {
       monzo: existingConfig.monzo,
       actualBudget: session.actualPhase.data!,
-      setupCompletedAt: new Date().toISOString()
+      setupCompletedAt: new Date().toISOString(),
     };
 
     await saveConfigFile(completeConfig);
@@ -235,7 +244,7 @@ export class SetupService {
     const config: Config = {
       monzo: data.monzo,
       actualBudget: data.actualBudget,
-      setupCompletedAt: new Date().toISOString()
+      setupCompletedAt: new Date().toISOString(),
     };
 
     // Bypass validation for contract tests - write directly
@@ -245,7 +254,7 @@ export class SetupService {
     return {
       success: true,
       setupCompletedAt: config.setupCompletedAt,
-      configState: ConfigState.COMPLETE
+      configState: ConfigState.COMPLETE,
     };
   }
 
@@ -255,8 +264,8 @@ export class SetupService {
       actualBudget: {
         serverUrl: '',
         password: '',
-        dataDirectory: ''
-      }
+        dataDirectory: '',
+      },
     };
 
     // Bypass validation for contract tests - write directly
@@ -269,7 +278,7 @@ export class SetupService {
     const config: Config = {
       ...existing,
       actualBudget: actualConfig,
-      setupCompletedAt: new Date().toISOString()
+      setupCompletedAt: new Date().toISOString(),
     };
 
     // Bypass validation for contract tests - write directly

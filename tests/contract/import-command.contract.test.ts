@@ -23,9 +23,7 @@ describe('Import Command CLI Contract', () => {
 
   describe('Command Registration', () => {
     it('should register import command', () => {
-      program
-        .command('import')
-        .description('Import Monzo transactions into Actual Budget');
+      program.command('import').description('Import Monzo transactions into Actual Budget');
 
       const commands = program.commands;
       const importCommand = commands.find(cmd => cmd.name() === 'import');
@@ -179,8 +177,7 @@ describe('Import Command CLI Contract', () => {
 
         if (!dateRegex.test(dateStr)) {
           throw new Error(
-            `Invalid date format: ${dateStr}\n` +
-            `Expected format: YYYY-MM-DD (e.g., 2025-09-15)`
+            `Invalid date format: ${dateStr}\n` + `Expected format: YYYY-MM-DD (e.g., 2025-09-15)`
           );
         }
 
@@ -257,18 +254,20 @@ describe('Import Command CLI Contract', () => {
         if (daysDiff > 90) {
           throw new Error(
             `Date range too large (${daysDiff} days). Maximum: 90 days\n` +
-            `Consider breaking into smaller imports`
+              `Consider breaking into smaller imports`
           );
         }
 
         return { start, end };
       };
 
-      expect(() => parseDateRange('2025-09-30', '2025-09-01')).toThrow('must be before or equal to');
+      expect(() => parseDateRange('2025-09-30', '2025-09-01')).toThrow(
+        'must be before or equal to'
+      );
       expect(() => parseDateRange('2025-09-01', '2025-12-31')).toThrow('too large');
       expect(parseDateRange('2025-09-01', '2025-09-30')).toEqual({
         start: new Date('2025-09-01'),
-        end: new Date('2025-09-30')
+        end: new Date('2025-09-30'),
       });
     });
   });
@@ -278,17 +277,18 @@ describe('Import Command CLI Contract', () => {
       const validateMonzoConfig = (config: any): void => {
         if (!config.monzo?.clientId || !config.monzo?.clientSecret) {
           throw new Error(
-            'Monzo configuration missing. Please run setup command:\n' +
-            '  actual-monzo setup'
+            'Monzo configuration missing. Please run setup command:\n' + '  actual-monzo setup'
           );
         }
       };
 
       expect(() => validateMonzoConfig({})).toThrow('Monzo configuration missing');
       expect(() => validateMonzoConfig({ monzo: {} })).toThrow('Monzo configuration missing');
-      expect(() => validateMonzoConfig({
-        monzo: { clientId: 'test', clientSecret: 'test' }
-      })).not.toThrow();
+      expect(() =>
+        validateMonzoConfig({
+          monzo: { clientId: 'test', clientSecret: 'test' },
+        })
+      ).not.toThrow();
     });
 
     it('should require Actual Budget configuration', () => {
@@ -296,33 +296,40 @@ describe('Import Command CLI Contract', () => {
         if (!config.actual?.serverUrl || !config.actual?.password) {
           throw new Error(
             'Actual Budget configuration missing. Please run setup command:\n' +
-            '  actual-monzo setup'
+              '  actual-monzo setup'
           );
         }
       };
 
       expect(() => validateActualConfig({})).toThrow('Actual Budget configuration missing');
-      expect(() => validateActualConfig({ actual: {} })).toThrow('Actual Budget configuration missing');
-      expect(() => validateActualConfig({
-        actual: { serverUrl: 'http://localhost:5006', password: 'test' }
-      })).not.toThrow();
+      expect(() => validateActualConfig({ actual: {} })).toThrow(
+        'Actual Budget configuration missing'
+      );
+      expect(() =>
+        validateActualConfig({
+          actual: { serverUrl: 'http://localhost:5006', password: 'test' },
+        })
+      ).not.toThrow();
     });
 
     it('should require account mappings', () => {
       const validateAccountMappings = (config: any): void => {
         if (!config.accountMappings || config.accountMappings.length === 0) {
           throw new Error(
-            'No account mappings configured. Please run setup command:\n' +
-            '  actual-monzo setup'
+            'No account mappings configured. Please run setup command:\n' + '  actual-monzo setup'
           );
         }
       };
 
       expect(() => validateAccountMappings({})).toThrow('No account mappings configured');
-      expect(() => validateAccountMappings({ accountMappings: [] })).toThrow('No account mappings configured');
-      expect(() => validateAccountMappings({
-        accountMappings: [{ monzoAccountId: 'acc_123', actualAccountId: 'uuid-123' }]
-      })).not.toThrow();
+      expect(() => validateAccountMappings({ accountMappings: [] })).toThrow(
+        'No account mappings configured'
+      );
+      expect(() =>
+        validateAccountMappings({
+          accountMappings: [{ monzoAccountId: 'acc_123', actualAccountId: 'uuid-123' }],
+        })
+      ).not.toThrow();
     });
 
     it('should require access token', () => {
@@ -330,23 +337,25 @@ describe('Import Command CLI Contract', () => {
         if (!config.monzo?.accessToken) {
           throw new Error(
             'Monzo access token missing or expired. Please run setup command:\n' +
-            '  actual-monzo setup'
+              '  actual-monzo setup'
           );
         }
       };
 
       expect(() => validateToken({})).toThrow('access token missing');
       expect(() => validateToken({ monzo: {} })).toThrow('access token missing');
-      expect(() => validateToken({
-        monzo: { accessToken: 'token_123' }
-      })).not.toThrow();
+      expect(() =>
+        validateToken({
+          monzo: { accessToken: 'token_123' },
+        })
+      ).not.toThrow();
     });
   });
 
   describe('Account Filter Validation', () => {
     const mockMappings = [
       { monzoAccountId: 'acc_001', monzoAccountName: 'Current Account' },
-      { monzoAccountId: 'acc_002', monzoAccountName: 'Joint Account' }
+      { monzoAccountId: 'acc_002', monzoAccountName: 'Joint Account' },
     ];
 
     it('should return all mappings when no filter provided', () => {
@@ -380,16 +389,20 @@ describe('Import Command CLI Contract', () => {
         if (filtered.length === 0) {
           throw new Error(
             `Account ${accountId} not found in mappings.\n` +
-            `Available accounts:\n` +
-            mappings.map(m => `  - ${m.monzoAccountId}: ${m.monzoAccountName}`).join('\n')
+              `Available accounts:\n` +
+              mappings.map(m => `  - ${m.monzoAccountId}: ${m.monzoAccountName}`).join('\n')
           );
         }
 
         return filtered;
       };
 
-      expect(() => filterAccountMappingsWithError(mockMappings, 'acc_999')).toThrow('not found in mappings');
-      expect(() => filterAccountMappingsWithError(mockMappings, 'acc_999')).toThrow('Available accounts');
+      expect(() => filterAccountMappingsWithError(mockMappings, 'acc_999')).toThrow(
+        'not found in mappings'
+      );
+      expect(() => filterAccountMappingsWithError(mockMappings, 'acc_999')).toThrow(
+        'Available accounts'
+      );
     });
   });
 

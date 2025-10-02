@@ -15,13 +15,13 @@ import path from 'path';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn().mockResolvedValue(undefined as any),
-  shutdown: vi.fn().mockResolvedValue(undefined as any)
+  shutdown: vi.fn().mockResolvedValue(undefined as any),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -44,14 +44,12 @@ describe('Integration: Setup Happy Path', () => {
     const service = new SetupService();
 
     // Mock Monzo OAuth endpoints
-    nock('https://api.monzo.com')
-      .post('/oauth2/token')
-      .reply(200, {
-        access_token: 'access_token_12345678901234567890',
-        refresh_token: 'refresh_token_12345678901234567890',
-        expires_in: 21600,
-        token_type: 'Bearer'
-      });
+    nock('https://api.monzo.com').post('/oauth2/token').reply(200, {
+      access_token: 'access_token_12345678901234567890',
+      refresh_token: 'refresh_token_12345678901234567890',
+      expires_in: 21600,
+      token_type: 'Bearer',
+    });
 
     // Mock Actual Budget API success
     vi.mocked(actualApi.init).mockResolvedValue(undefined as any);
@@ -64,19 +62,19 @@ describe('Integration: Setup Happy Path', () => {
       accessToken: 'access_token_12345678901234567890',
       refreshToken: 'refresh_token_12345678901234567890',
       tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-      authorizedAt: new Date().toISOString()
+      authorizedAt: new Date().toISOString(),
     };
 
     const actualConfig = {
       serverUrl: 'http://localhost:5006',
       password: 'test_password',
       dataDirectory: '/tmp/actual',
-      validatedAt: new Date().toISOString()
+      validatedAt: new Date().toISOString(),
     };
 
     const result = await service.runFullSetup({
       monzo: monzoConfig,
-      actualBudget: actualConfig
+      actualBudget: actualConfig,
     });
 
     // Assertions

@@ -38,8 +38,8 @@ const DEFAULT_CONFIG: ActualMonzoConfig = {
     defaultDateRange: 30,
     autoSync: false,
     verbose: false,
-    backupBeforeSync: true
-  }
+    backupBeforeSync: true,
+  },
 };
 
 /**
@@ -111,10 +111,7 @@ export class ConfigManager {
   /**
    * Sets a specific configuration value
    */
-  async set<K extends keyof ActualMonzoConfig>(
-    key: K,
-    value: ActualMonzoConfig[K]
-  ): Promise<void> {
+  async set<K extends keyof ActualMonzoConfig>(key: K, value: ActualMonzoConfig[K]): Promise<void> {
     const config = await this.load();
     config[key] = value;
     this.config = config;
@@ -169,7 +166,7 @@ export class ConfigManager {
     return {
       isComplete: missing.length === 0,
       missing,
-      warnings
+      warnings,
     };
   }
 
@@ -224,7 +221,7 @@ export class ConfigManager {
       monzo: { ...DEFAULT_CONFIG.monzo, ...partial.monzo },
       actual: { ...DEFAULT_CONFIG.actual, ...partial.actual },
       preferences: { ...DEFAULT_CONFIG.preferences, ...partial.preferences },
-      lastSync: partial.lastSync
+      lastSync: partial.lastSync,
     };
   }
 
@@ -239,12 +236,12 @@ export class ConfigManager {
         ...config.monzo,
         clientSecret: config.monzo.clientSecret ? '***MASKED***' : undefined,
         accessToken: config.monzo.accessToken ? '***MASKED***' : undefined,
-        refreshToken: config.monzo.refreshToken ? '***MASKED***' : undefined
+        refreshToken: config.monzo.refreshToken ? '***MASKED***' : undefined,
       },
       actual: {
         ...config.actual,
-        password: config.actual.password ? '***MASKED***' : undefined
-      }
+        password: config.actual.password ? '***MASKED***' : undefined,
+      },
     };
 
     return JSON.stringify(masked, null, 2);

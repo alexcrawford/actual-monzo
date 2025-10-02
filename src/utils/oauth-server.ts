@@ -35,7 +35,9 @@ function getOAuthCallbackPort(): number {
 
   // Validate port is a valid number and within valid range
   if (isNaN(port) || port < 1 || port > 65535) {
-    console.warn(`Invalid OAUTH_CALLBACK_PORT "${envPort}", falling back to default ${DEFAULT_PORT}`);
+    console.warn(
+      `Invalid OAUTH_CALLBACK_PORT "${envPort}", falling back to default ${DEFAULT_PORT}`
+    );
     return DEFAULT_PORT;
   }
 
@@ -106,7 +108,7 @@ export async function createOAuthCallbackServer(): Promise<OAuthServer> {
         code: code ?? undefined,
         state: state ?? undefined,
         error: error ?? undefined,
-        errorDescription: errorDescription ?? undefined
+        errorDescription: errorDescription ?? undefined,
       });
       callbackResolver = null;
     }
@@ -135,14 +137,14 @@ export async function createOAuthCallbackServer(): Promise<OAuthServer> {
     } catch (error) {
       throw new Error(
         `Port ${port} is already in use. ` +
-        `Please free up the port or check if another OAuth flow is running.\n` +
-        `Run: lsof -i :${port} to see what's using the port.`
+          `Please free up the port or check if another OAuth flow is running.\n` +
+          `Run: lsof -i :${port} to see what's using the port.`
       );
     }
   };
 
   const waitForCallback = (): Promise<OAuthCallbackResult> => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       callbackResolver = resolve;
     });
   };
@@ -150,7 +152,7 @@ export async function createOAuthCallbackServer(): Promise<OAuthServer> {
   const shutdown = async (): Promise<void> => {
     if (server) {
       return new Promise((resolve, reject) => {
-        server!.close((err) => {
+        server!.close(err => {
           if (err) reject(err);
           else resolve();
         });

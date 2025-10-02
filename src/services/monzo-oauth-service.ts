@@ -33,7 +33,7 @@ export class MonzoOAuthService {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      state
+      state,
     });
 
     return `${MONZO_AUTH_URL}?${params.toString()}`;
@@ -106,7 +106,9 @@ export class MonzoOAuthService {
       // Handle OAuth errors
       if (callback.error) {
         spinner.fail('Authorization failed');
-        throw new Error(`OAuth error: ${callback.error}${callback.errorDescription ? ' - ' + callback.errorDescription : ''}`);
+        throw new Error(
+          `OAuth error: ${callback.error}${callback.errorDescription ? ' - ' + callback.errorDescription : ''}`
+        );
       }
 
       // Validate state (CSRF protection)
@@ -126,7 +128,7 @@ export class MonzoOAuthService {
         code: callback.code,
         clientId: params.clientId,
         clientSecret: params.clientSecret,
-        redirectUri
+        redirectUri,
       });
 
       const now = new Date();
@@ -140,7 +142,7 @@ export class MonzoOAuthService {
         accessToken: tokenResponse.access_token,
         refreshToken: tokenResponse.refresh_token,
         tokenExpiresAt: expiresAt.toISOString(),
-        authorizedAt: now.toISOString()
+        authorizedAt: now.toISOString(),
       };
     } catch (error) {
       spinner.stop();

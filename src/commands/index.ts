@@ -29,7 +29,7 @@ async function createCLI(): Promise<Command> {
     packageJson = {
       name: 'actual-monzo',
       version: '1.0.0',
-      description: 'CLI tool to import Monzo transactions into Actual Budget'
+      description: 'CLI tool to import Monzo transactions into Actual Budget',
     };
   }
 
@@ -37,14 +37,16 @@ async function createCLI(): Promise<Command> {
   program
     .name(packageJson.name ?? 'actual-monzo')
     .version(packageJson.version ?? '1.0.0')
-    .description(packageJson.description ?? 'CLI tool to import Monzo transactions into Actual Budget')
+    .description(
+      packageJson.description ?? 'CLI tool to import Monzo transactions into Actual Budget'
+    )
     .configureHelp({
       sortSubcommands: true,
-      subcommandTerm: (cmd) => cmd.name()
+      subcommandTerm: cmd => cmd.name(),
     })
     .configureOutput({
-      writeOut: (str) => process.stdout.write(chalk.cyan(str)),
-      writeErr: (str) => process.stderr.write(chalk.red(str))
+      writeOut: str => process.stdout.write(chalk.cyan(str)),
+      writeErr: str => process.stderr.write(chalk.red(str)),
     });
 
   // Add global options
@@ -65,7 +67,7 @@ async function createCLI(): Promise<Command> {
   program.addCommand(importCommand);
 
   // Error handling for unknown commands
-  program.on('command:*', (args) => {
+  program.on('command:*', args => {
     console.error(chalk.red(`Unknown command: ${args[0]}`));
     console.log('Available commands:');
     program.commands.forEach(cmd => {
@@ -95,12 +97,12 @@ export async function main(argv?: string[]): Promise<void> {
 /**
  * Handle global error events
  */
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error(chalk.red('Uncaught Exception:'), error.message);
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', reason => {
   console.error(chalk.red('Unhandled Rejection:'), reason);
   process.exit(1);
 });

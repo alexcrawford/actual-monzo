@@ -15,13 +15,13 @@ import path from 'path';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn().mockResolvedValue(undefined as any),
-  shutdown: vi.fn().mockResolvedValue(undefined as any)
+  shutdown: vi.fn().mockResolvedValue(undefined as any),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -50,15 +50,15 @@ describe('Integration: Setup Reconfiguration', () => {
         accessToken: 'access_token_12345678901234567890',
         refreshToken: 'refresh_token_12345678901234567890',
         tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        authorizedAt: new Date().toISOString()
+        authorizedAt: new Date().toISOString(),
       },
       actualBudget: {
         serverUrl: 'http://localhost:5006',
         password: 'old_password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date(Date.now() - 86400000).toISOString() // Yesterday
+        validatedAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
       },
-      setupCompletedAt: new Date(Date.now() - 86400000).toISOString()
+      setupCompletedAt: new Date(Date.now() - 86400000).toISOString(),
     };
 
     const configPath = path.join(process.cwd(), 'config.yaml');
@@ -79,13 +79,13 @@ describe('Integration: Setup Reconfiguration', () => {
       serverUrl: 'http://localhost:5007',
       password: 'new_password',
       dataDirectory: '/tmp/actual-new',
-      validatedAt: new Date().toISOString()
+      validatedAt: new Date().toISOString(),
     };
 
     // Use runFullSetup to allow reconfiguration (preserving Monzo config)
     const result = await service.runFullSetup({
       monzo: completeConfig.monzo,
-      actualBudget: newActualConfig
+      actualBudget: newActualConfig,
     });
 
     // Assertions
@@ -105,7 +105,9 @@ describe('Integration: Setup Reconfiguration', () => {
     expect(updatedConfig.actualBudget.serverUrl).toBe('http://localhost:5007');
     expect(updatedConfig.actualBudget.password).toBe('new_password');
     expect(updatedConfig.actualBudget.dataDirectory).toBe('/tmp/actual-new');
-    expect(updatedConfig.actualBudget.validatedAt).not.toBe(completeConfig.actualBudget.validatedAt);
+    expect(updatedConfig.actualBudget.validatedAt).not.toBe(
+      completeConfig.actualBudget.validatedAt
+    );
 
     // setupCompletedAt should be UPDATED
     expect(updatedConfig.setupCompletedAt).not.toBe(completeConfig.setupCompletedAt);
@@ -122,15 +124,15 @@ describe('Integration: Setup Reconfiguration', () => {
         accessToken: 'expired_access_token',
         refreshToken: 'expired_refresh_token',
         tokenExpiresAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        authorizedAt: new Date(Date.now() - 86400000).toISOString()
+        authorizedAt: new Date(Date.now() - 86400000).toISOString(),
       },
       actualBudget: {
         serverUrl: 'http://localhost:5006',
         password: 'test_password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       },
-      setupCompletedAt: new Date(Date.now() - 86400000).toISOString()
+      setupCompletedAt: new Date(Date.now() - 86400000).toISOString(),
     };
 
     const configPath = path.join(process.cwd(), 'config.yaml');
@@ -138,14 +140,12 @@ describe('Integration: Setup Reconfiguration', () => {
     vol.writeFileSync(configPath, yamlContent);
 
     // Mock Monzo OAuth endpoints for re-authorization
-    nock('https://api.monzo.com')
-      .post('/oauth2/token')
-      .reply(200, {
-        access_token: 'new_access_token_12345678901234567890',
-        refresh_token: 'new_refresh_token_12345678901234567890',
-        expires_in: 21600,
-        token_type: 'Bearer'
-      });
+    nock('https://api.monzo.com').post('/oauth2/token').reply(200, {
+      access_token: 'new_access_token_12345678901234567890',
+      refresh_token: 'new_refresh_token_12345678901234567890',
+      expires_in: 21600,
+      token_type: 'Bearer',
+    });
 
     // Execute Monzo reconfiguration
     const newMonzoConfig = {
@@ -154,12 +154,12 @@ describe('Integration: Setup Reconfiguration', () => {
       accessToken: 'new_access_token_12345678901234567890',
       refreshToken: 'new_refresh_token_12345678901234567890',
       tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-      authorizedAt: new Date().toISOString()
+      authorizedAt: new Date().toISOString(),
     };
 
     const result = await service.runFullSetup({
       monzo: newMonzoConfig,
-      actualBudget: configWithExpiredTokens.actualBudget
+      actualBudget: configWithExpiredTokens.actualBudget,
     });
 
     // Assertions
@@ -178,7 +178,9 @@ describe('Integration: Setup Reconfiguration', () => {
     // Actual Budget section should be UNCHANGED
     expect(updatedConfig.actualBudget.serverUrl).toBe('http://localhost:5006');
     expect(updatedConfig.actualBudget.password).toBe('test_password');
-    expect(updatedConfig.actualBudget.validatedAt).toBe(configWithExpiredTokens.actualBudget.validatedAt);
+    expect(updatedConfig.actualBudget.validatedAt).toBe(
+      configWithExpiredTokens.actualBudget.validatedAt
+    );
 
     // setupCompletedAt should be UPDATED
     expect(updatedConfig.setupCompletedAt).not.toBe(configWithExpiredTokens.setupCompletedAt);

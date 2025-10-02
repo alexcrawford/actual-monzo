@@ -20,14 +20,14 @@ export async function launchBrowser(url: string): Promise<BrowserLaunchResult> {
     await open(url);
     return {
       success: true,
-      url
+      url,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       success: false,
       error: errorMessage,
-      url
+      url,
     };
   }
 }

@@ -59,13 +59,14 @@ export class ActualClient {
           success: false,
           error: {
             code: SetupErrorCode.DIRECTORY_ERROR,
-            message: `Cannot create data directory ${resolvedDataDir}.\n` +
+            message:
+              `Cannot create data directory ${resolvedDataDir}.\n` +
               'Please check:\n' +
               `  - You have write permissions\n` +
               `  - Parent directory exists\n` +
               `  - Disk space is available`,
-            originalError: mkdirError instanceof Error ? mkdirError : new Error(String(mkdirError))
-          }
+            originalError: mkdirError instanceof Error ? mkdirError : new Error(String(mkdirError)),
+          },
         };
       }
 
@@ -73,7 +74,7 @@ export class ActualClient {
       await actualApi.init({
         serverURL: serverUrl,
         password,
-        dataDir: resolvedDataDir
+        dataDir: resolvedDataDir,
       });
 
       // Success - connection validated
@@ -81,7 +82,7 @@ export class ActualClient {
 
       return {
         success: true,
-        validatedAt
+        validatedAt,
       };
     } catch (error) {
       const err = error as Error & { code?: string; status?: number };
@@ -92,12 +93,13 @@ export class ActualClient {
           success: false,
           error: {
             code: SetupErrorCode.SERVER_UNREACHABLE,
-            message: `Cannot reach Actual Budget server at ${serverUrl}. Please check:\n` +
+            message:
+              `Cannot reach Actual Budget server at ${serverUrl}. Please check:\n` +
               `  - Server is running\n` +
               `  - URL is correct\n` +
               `  - No firewall blocking connection`,
-            originalError: err
-          }
+            originalError: err,
+          },
         };
       }
 
@@ -106,12 +108,13 @@ export class ActualClient {
           success: false,
           error: {
             code: SetupErrorCode.SERVER_UNREACHABLE,
-            message: `Actual Budget server is not responding at ${serverUrl}. Please check:\n` +
+            message:
+              `Actual Budget server is not responding at ${serverUrl}. Please check:\n` +
               `  - Server is running and accessible\n` +
               `  - Network connection is stable\n` +
               `  - Server is not overloaded`,
-            originalError: err
-          }
+            originalError: err,
+          },
         };
       }
 
@@ -120,39 +123,49 @@ export class ActualClient {
           success: false,
           error: {
             code: SetupErrorCode.SERVER_UNREACHABLE,
-            message: `Cannot reach Actual Budget server at ${serverUrl}. Please check:\n` +
+            message:
+              `Cannot reach Actual Budget server at ${serverUrl}. Please check:\n` +
               `  - Server URL hostname is correct\n` +
               `  - DNS resolution is working\n` +
               `  - Server is accessible from this network`,
-            originalError: err
-          }
+            originalError: err,
+          },
         };
       }
 
-      if (err.status === 401 || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+      if (
+        err.status === 401 ||
+        err.message?.includes('401') ||
+        err.message?.includes('Unauthorized')
+      ) {
         return {
           success: false,
           error: {
             code: SetupErrorCode.INVALID_CREDENTIALS,
-            message: 'Invalid password for Actual Budget server.\n' +
-              'Please check your server password.',
-            originalError: err
-          }
+            message:
+              'Invalid password for Actual Budget server.\n' + 'Please check your server password.',
+            originalError: err,
+          },
         };
       }
 
-      if (err.code === 'EACCES' || err.code === 'EPERM' || err.message?.includes('permission denied')) {
+      if (
+        err.code === 'EACCES' ||
+        err.code === 'EPERM' ||
+        err.message?.includes('permission denied')
+      ) {
         return {
           success: false,
           error: {
             code: SetupErrorCode.DIRECTORY_ERROR,
-            message: `Cannot write to directory ${dataDirectory}.\n` +
+            message:
+              `Cannot write to directory ${dataDirectory}.\n` +
               'Please check:\n' +
               `  - Directory exists or can be created\n` +
               `  - You have write permissions\n` +
               `  - Disk space is available`,
-            originalError: err
-          }
+            originalError: err,
+          },
         };
       }
 
@@ -162,8 +175,8 @@ export class ActualClient {
         error: {
           code: SetupErrorCode.CONFIGURATION_ERROR,
           message: `Unexpected error connecting to Actual Budget: ${err.message ?? 'Unknown error'}`,
-          originalError: err
-        }
+          originalError: err,
+        },
       };
     } finally {
       // Always disconnect, even on error

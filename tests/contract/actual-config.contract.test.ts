@@ -21,7 +21,7 @@ import { SetupErrorCode } from '../../src/types/setup';
 // Mock @actual-app/api
 vi.mock('@actual-app/api', () => ({
   init: vi.fn(),
-  shutdown: vi.fn()
+  shutdown: vi.fn(),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -53,7 +53,7 @@ describe('Actual Budget Connection Contract', () => {
       expect(actualApi.init).toHaveBeenCalledWith({
         serverURL: serverUrl,
         password,
-        dataDir: dataDirectory
+        dataDir: dataDirectory,
       });
       expect(actualApi.shutdown).toHaveBeenCalled();
     });

@@ -13,17 +13,15 @@ import { ConfigState } from '../types/setup';
 export function createSetupCommand(): Command {
   const command = new Command('setup');
 
-  command
-    .description('Configure Monzo and Actual Budget integration')
-    .action(async () => {
-      try {
-        await runSetup();
-      } catch (error) {
-        console.error(chalk.red('\n❌ Setup failed'));
-        console.error(chalk.red(error instanceof Error ? error.message : 'Unknown error'));
-        process.exit(1);
-      }
-    });
+  command.description('Configure Monzo and Actual Budget integration').action(async () => {
+    try {
+      await runSetup();
+    } catch (error) {
+      console.error(chalk.red('\n❌ Setup failed'));
+      console.error(chalk.red(error instanceof Error ? error.message : 'Unknown error'));
+      process.exit(1);
+    }
+  });
 
   return command;
 }
@@ -36,12 +34,14 @@ async function runSetup() {
   const existingState = await checkExistingConfig();
 
   if (existingState === ConfigState.COMPLETE) {
-    const { overwrite } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'overwrite',
-      message: 'Configuration already exists and is complete. Overwrite?',
-      default: false
-    }]);
+    const { overwrite } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'overwrite',
+        message: 'Configuration already exists and is complete. Overwrite?',
+        default: false,
+      },
+    ]);
 
     if (!overwrite) {
       console.log(chalk.yellow('\n✓ Keeping existing configuration'));
@@ -50,12 +50,14 @@ async function runSetup() {
   }
 
   if (existingState === ConfigState.PARTIAL_MONZO_ONLY) {
-    const { resume } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'resume',
-      message: 'Monzo configuration exists. Resume setup from Actual Budget phase?',
-      default: true
-    }]);
+    const { resume } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'resume',
+        message: 'Monzo configuration exists. Resume setup from Actual Budget phase?',
+        default: true,
+      },
+    ]);
 
     if (resume) {
       await runActualBudgetPhase();
@@ -95,7 +97,7 @@ async function runCompleteSetup() {
           return 'Client ID appears too short';
         }
         return true;
-      }
+      },
     },
     {
       type: 'password',
@@ -110,8 +112,8 @@ async function runCompleteSetup() {
           return 'Client Secret appears too short';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 
   // Collect Actual Budget credentials
@@ -133,14 +135,14 @@ async function runCompleteSetup() {
         } catch {
           return 'Invalid URL format';
         }
-      }
+      },
     },
     {
       type: 'password',
       name: 'password',
       message: 'Actual Budget Server Password:',
       mask: '*',
-      validate: (input: string) => input.length > 0 || 'Password cannot be empty'
+      validate: (input: string) => input.length > 0 || 'Password cannot be empty',
     },
     {
       type: 'input',
@@ -152,20 +154,20 @@ async function runCompleteSetup() {
           return 'Data directory must be a valid path (absolute or relative)';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 
   // Execute complete setup
   await service.runCompleteSetup(
     {
       clientId: monzoAnswers.clientId,
-      clientSecret: monzoAnswers.clientSecret
+      clientSecret: monzoAnswers.clientSecret,
     },
     {
       serverUrl: actualAnswers.serverUrl,
       password: actualAnswers.password,
-      dataDirectory: actualAnswers.dataDirectory
+      dataDirectory: actualAnswers.dataDirectory,
     }
   );
 }
@@ -191,14 +193,14 @@ async function runActualBudgetPhase() {
         } catch {
           return 'Invalid URL format';
         }
-      }
+      },
     },
     {
       type: 'password',
       name: 'password',
       message: 'Actual Budget Server Password:',
       mask: '*',
-      validate: (input: string) => input.length > 0 || 'Password cannot be empty'
+      validate: (input: string) => input.length > 0 || 'Password cannot be empty',
     },
     {
       type: 'input',
@@ -210,13 +212,13 @@ async function runActualBudgetPhase() {
           return 'Data directory must be a valid path (absolute or relative)';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 
   await service.resumeSetup({
     serverUrl: answers.serverUrl,
     password: answers.password,
-    dataDirectory: answers.dataDirectory
+    dataDirectory: answers.dataDirectory,
   });
 }

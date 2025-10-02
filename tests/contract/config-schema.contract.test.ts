@@ -81,13 +81,13 @@ describe('Config Validation Contract', () => {
     it('should reject config missing clientId', async () => {
       const invalidConfig = {
         monzo: {
-          clientSecret: 'mnzconf_secret'
+          clientSecret: 'mnzconf_secret',
         },
         actualBudget: {
           serverUrl: 'http://localhost:5006',
           password: 'test',
-          dataDirectory: '/tmp/actual'
-        }
+          dataDirectory: '/tmp/actual',
+        },
       };
 
       const result = await validateConfig(invalidConfig as any);
@@ -102,12 +102,12 @@ describe('Config Validation Contract', () => {
       const invalidConfig = {
         monzo: {
           clientId: 'oauth2client_test',
-          clientSecret: 'mnzconf_secret'
+          clientSecret: 'mnzconf_secret',
         },
         actualBudget: {
           password: 'test',
-          dataDirectory: '/tmp/actual'
-        }
+          dataDirectory: '/tmp/actual',
+        },
       };
 
       const result = await validateConfig(invalidConfig as any);
@@ -122,13 +122,13 @@ describe('Config Validation Contract', () => {
       const invalidConfig = {
         monzo: {
           clientId: 'oauth2client_test',
-          clientSecret: 'mnzconf_secret'
+          clientSecret: 'mnzconf_secret',
         },
         actualBudget: {
           serverUrl: 'localhost:5006',
           password: 'test',
-          dataDirectory: '/tmp/actual'
-        }
+          dataDirectory: '/tmp/actual',
+        },
       };
 
       const result = await validateConfig(invalidConfig);
@@ -147,13 +147,13 @@ describe('Config Validation Contract', () => {
           accessToken: 'access_token_12345678901234567890',
           refreshToken: 'refresh_token_12345678901234567890',
           tokenExpiresAt: '2099-12-31T23:59:59.000Z',
-          authorizedAt: '2025-10-01T18:00:00.000Z'
+          authorizedAt: '2025-10-01T18:00:00.000Z',
         },
         actualBudget: {
           serverUrl: 'http://localhost:5006',
           password: 'test',
-          dataDirectory: './relative/path'
-        }
+          dataDirectory: './relative/path',
+        },
       };
 
       const result = await validateConfig(validConfig);
@@ -168,23 +168,28 @@ describe('Config Validation Contract', () => {
         monzo: {
           clientId: 'oauth2client_test',
           clientSecret: 'mnzconf_secret',
-          accessToken: 'access_token_only'
+          accessToken: 'access_token_only',
           // Missing refreshToken, tokenExpiresAt, authorizedAt
         },
         actualBudget: {
           serverUrl: 'http://localhost:5006',
           password: 'test',
-          dataDirectory: '/tmp/actual'
-        }
+          dataDirectory: '/tmp/actual',
+        },
       };
 
       const result = await validateConfig(invalidConfig);
 
       expect(result.valid).toBe(false);
-      expect(result.errors!.some(e =>
-        e.includes('accessToken') &&
-        (e.includes('refreshToken') || e.includes('tokenExpiresAt') || e.includes('authorizedAt'))
-      )).toBe(true);
+      expect(
+        result.errors!.some(
+          e =>
+            e.includes('accessToken') &&
+            (e.includes('refreshToken') ||
+              e.includes('tokenExpiresAt') ||
+              e.includes('authorizedAt'))
+        )
+      ).toBe(true);
     });
   });
 });

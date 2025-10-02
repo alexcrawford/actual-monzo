@@ -79,7 +79,7 @@ export async function saveConfig(config: Config): Promise<void> {
   const yamlContent = dump(validatedConfig, {
     indent: 2,
     lineWidth: 120,
-    noRefs: true
+    noRefs: true,
   });
 
   // Write to file
@@ -97,9 +97,7 @@ export async function saveConfig(config: Config): Promise<void> {
 /**
  * Validates config and determines current state
  */
-export async function validateConfig(
-  configOrYaml?: Config | string
-): Promise<ValidationResult> {
+export async function validateConfig(configOrYaml?: Config | string): Promise<ValidationResult> {
   try {
     let rawConfig: unknown;
 
@@ -111,7 +109,7 @@ export async function validateConfig(
         return {
           valid: false,
           state: ConfigState.MALFORMED,
-          errors: [`YAML parse error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+          errors: [`YAML parse error: ${error instanceof Error ? error.message : 'Unknown error'}`],
         };
       }
     } else if (configOrYaml) {
@@ -122,7 +120,7 @@ export async function validateConfig(
       if (!(await configExists())) {
         return {
           valid: false,
-          state: ConfigState.UNCONFIGURED
+          state: ConfigState.UNCONFIGURED,
         };
       }
       const fileContent = await readFile(getConfigPath(), 'utf-8');
@@ -132,7 +130,7 @@ export async function validateConfig(
         return {
           valid: false,
           state: ConfigState.MALFORMED,
-          errors: [`YAML parse error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+          errors: [`YAML parse error: ${error instanceof Error ? error.message : 'Unknown error'}`],
         };
       }
     }
@@ -147,14 +145,14 @@ export async function validateConfig(
       return {
         valid: true,
         config,
-        state
+        state,
       };
     } catch (error) {
       // Zod validation error
       // Check for ZodError using issues array
       if (error && typeof error === 'object' && 'issues' in error) {
         const zodError = error as { issues: Array<{ path: (string | number)[]; message: string }> };
-        const errors = zodError.issues.map((issue) => {
+        const errors = zodError.issues.map(issue => {
           const path = issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
           return `${path}${issue.message}`;
         });
@@ -162,21 +160,21 @@ export async function validateConfig(
         return {
           valid: false,
           state: ConfigState.MALFORMED,
-          errors
+          errors,
         };
       }
 
       return {
         valid: false,
         state: ConfigState.MALFORMED,
-        errors: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
       };
     }
   } catch (error) {
     return {
       valid: false,
       state: ConfigState.MALFORMED,
-      errors: [`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      errors: [`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`],
     };
   }
 }

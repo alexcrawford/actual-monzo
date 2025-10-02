@@ -49,32 +49,28 @@ function validateImportConfig(config: Config): void {
   // Check Monzo configuration
   if (!config.monzo?.clientId || !config.monzo?.clientSecret) {
     throw new Error(
-      'Monzo configuration missing. Please run setup command:\n' +
-      '  actual-monzo setup'
+      'Monzo configuration missing. Please run setup command:\n' + '  actual-monzo setup'
     );
   }
 
   // Check Actual Budget configuration
   if (!config.actualBudget?.serverUrl || !config.actualBudget?.password) {
     throw new Error(
-      'Actual Budget configuration missing. Please run setup command:\n' +
-      '  actual-monzo setup'
+      'Actual Budget configuration missing. Please run setup command:\n' + '  actual-monzo setup'
     );
   }
 
   // Check account mappings exist
   if (!config.accountMappings || config.accountMappings.length === 0) {
     throw new Error(
-      'No account mappings configured. Please run setup command:\n' +
-      '  actual-monzo setup'
+      'No account mappings configured. Please run setup command:\n' + '  actual-monzo setup'
     );
   }
 
   // Check access token
   if (!config.monzo?.accessToken) {
     throw new Error(
-      'Monzo access token missing or expired. Please run setup command:\n' +
-      '  actual-monzo setup'
+      'Monzo access token missing or expired. Please run setup command:\n' + '  actual-monzo setup'
     );
   }
 }
@@ -87,10 +83,7 @@ function validateImportConfig(config: Config): void {
  * @returns Filtered account mappings
  * @throws Error if specified account not found
  */
-function filterAccountMappings(
-  mappings: AccountMapping[],
-  accountId?: string
-): AccountMapping[] {
+function filterAccountMappings(mappings: AccountMapping[], accountId?: string): AccountMapping[] {
   if (!accountId) {
     return mappings;
   }
@@ -100,8 +93,8 @@ function filterAccountMappings(
   if (filtered.length === 0) {
     throw new Error(
       `Account ${accountId} not found in mappings.\n` +
-      `Available accounts:\n` +
-      mappings.map(m => `  - ${m.monzoAccountId}: ${m.monzoAccountName}`).join('\n')
+        `Available accounts:\n` +
+        mappings.map(m => `  - ${m.monzoAccountId}: ${m.monzoAccountName}`).join('\n')
     );
   }
 
@@ -122,11 +115,11 @@ function displayImportSummary(
 ): void {
   const duration = ((Date.now() - session.startTime.getTime()) / 1000).toFixed(1);
 
-  console.log(
-    chalk.green(`\n✓ ${dryRun ? 'Preview' : 'Import'} completed in ${duration}s\n`)
-  );
+  console.log(chalk.green(`\n✓ ${dryRun ? 'Preview' : 'Import'} completed in ${duration}s\n`));
 
-  console.log(`Accounts: ${session.successfulAccounts.length}/${session.accountsProcessed} processed`);
+  console.log(
+    `Accounts: ${session.successfulAccounts.length}/${session.accountsProcessed} processed`
+  );
 
   // Display successful accounts
   session.successfulAccounts.forEach(accountId => {
@@ -169,10 +162,7 @@ async function importAction(options: ImportOptions): Promise<void> {
     const dateRange = parseDateRange(options.start, options.end);
 
     // Filter account mappings if --account specified
-    const accountMappings = filterAccountMappings(
-      config.accountMappings!,
-      options.account
-    );
+    const accountMappings = filterAccountMappings(config.accountMappings!, options.account);
 
     // Initialize import service
     const importService = new ImportService();
@@ -199,7 +189,6 @@ async function importAction(options: ImportOptions): Promise<void> {
     displayImportSummary(session, accountMappings, options.dryRun);
 
     process.exit(0);
-
   } catch (error) {
     if (spinner) {
       spinner.fail();
@@ -218,23 +207,8 @@ async function importAction(options: ImportOptions): Promise<void> {
  */
 export const importCommand = new Command('import')
   .description('Import Monzo transactions into Actual Budget')
-  .option(
-    '-s, --start <date>',
-    'Start date (YYYY-MM-DD)',
-    calculateDefaultStart()
-  )
-  .option(
-    '-e, --end <date>',
-    'End date (YYYY-MM-DD)',
-    calculateDefaultEnd()
-  )
-  .option(
-    '-a, --account <id>',
-    'Import specific Monzo account ID'
-  )
-  .option(
-    '--dry-run',
-    'Preview import without making changes',
-    false
-  )
+  .option('-s, --start <date>', 'Start date (YYYY-MM-DD)', calculateDefaultStart())
+  .option('-e, --end <date>', 'End date (YYYY-MM-DD)', calculateDefaultEnd())
+  .option('-a, --account <id>', 'Import specific Monzo account ID')
+  .option('--dry-run', 'Preview import without making changes', false)
   .action(importAction);

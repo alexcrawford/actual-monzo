@@ -49,7 +49,7 @@ async function fetchActualAccounts(config: Config): Promise<ActualAccount[]> {
       await actualApi.init({
         serverURL: config.actualBudget.serverUrl,
         password: config.actualBudget.password,
-        dataDir: dataDir
+        dataDir: dataDir,
       });
 
       // Get available budgets
@@ -60,9 +60,7 @@ async function fetchActualAccounts(config: Config): Promise<ActualAccount[]> {
       }
 
       // Deduplicate budgets by groupId (API sometimes returns duplicates)
-      return Array.from(
-        new Map(budgets.map(b => [b.groupId, b])).values()
-      );
+      return Array.from(new Map(budgets.map(b => [b.groupId, b])).values());
     });
 
     initialized = true;
@@ -74,15 +72,17 @@ async function fetchActualAccounts(config: Config): Promise<ActualAccount[]> {
       const budgetChoices = uniqueBudgets.map(b => ({
         name: `${b.name} (${b.groupId})`,
         value: b.groupId,
-        short: b.name
+        short: b.name,
       }));
 
-      const { selectedBudgetId } = await inquirer.prompt([{
-        type: 'list',
-        name: 'selectedBudgetId',
-        message: 'Which budget do you want to use?',
-        choices: budgetChoices
-      }]);
+      const { selectedBudgetId } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'selectedBudgetId',
+          message: 'Which budget do you want to use?',
+          choices: budgetChoices,
+        },
+      ]);
 
       budgetId = selectedBudgetId;
     }
@@ -107,8 +107,8 @@ async function fetchActualAccounts(config: Config): Promise<ActualAccount[]> {
 
     throw new Error(
       `Failed to fetch Actual Budget accounts: ${errorMessage}\n` +
-      `Server: ${config.actualBudget.serverUrl}\n` +
-      `Data directory: ${config.actualBudget.dataDirectory}`
+        `Server: ${config.actualBudget.serverUrl}\n` +
+        `Data directory: ${config.actualBudget.dataDirectory}`
     );
   } finally {
     if (initialized) {
@@ -146,7 +146,11 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
     throw new Error('No Actual Budget accounts found. Please check your Actual Budget setup.');
   }
 
-  console.log(chalk.green(`\n✓ Found ${monzoAccounts.length} Monzo account(s) and ${actualAccounts.length} Actual Budget account(s)\n`));
+  console.log(
+    chalk.green(
+      `\n✓ Found ${monzoAccounts.length} Monzo account(s) and ${actualAccounts.length} Actual Budget account(s)\n`
+    )
+  );
 
   // Build account mappings interactively
   const mappings: AccountMapping[] = [];
@@ -154,9 +158,12 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
   // Helper to generate friendly account name
   const getAccountDisplayName = (account: MonzoAccount): string => {
     const ownerName = account.owners?.[0]?.preferred_name ?? 'Unknown';
-    const accountType = account.product_type === 'flex' ? 'Flex' :
-                       account.type === 'uk_retail_joint' ? 'Joint Account' :
-                       'Current Account';
+    const accountType =
+      account.product_type === 'flex'
+        ? 'Flex'
+        : account.type === 'uk_retail_joint'
+          ? 'Joint Account'
+          : 'Current Account';
     return `${ownerName} - ${accountType}`;
   };
 
@@ -164,12 +171,14 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
     const displayName = getAccountDisplayName(monzoAccount);
     console.log(chalk.bold(`\nMonzo Account: ${chalk.cyan(displayName)} (${monzoAccount.id})`));
 
-    const { shouldMap } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'shouldMap',
-      message: 'Do you want to map this Monzo account?',
-      default: true
-    }]);
+    const { shouldMap } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'shouldMap',
+        message: 'Do you want to map this Monzo account?',
+        default: true,
+      },
+    ]);
 
     if (!shouldMap) {
       continue;
@@ -178,15 +187,17 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
     const actualChoices = actualAccounts.map(acc => ({
       name: `${acc.name} (${acc.id})`,
       value: acc.id,
-      short: acc.name
+      short: acc.name,
     }));
 
-    const { actualAccountId } = await inquirer.prompt([{
-      type: 'list',
-      name: 'actualAccountId',
-      message: 'Which Actual Budget account should this map to?',
-      choices: actualChoices
-    }]);
+    const { actualAccountId } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'actualAccountId',
+        message: 'Which Actual Budget account should this map to?',
+        choices: actualChoices,
+      },
+    ]);
 
     const actualAccount = actualAccounts.find(acc => acc.id === actualAccountId);
 
@@ -195,7 +206,7 @@ export async function runAccountMappingFlow(config: Config): Promise<Config> {
         monzoAccountId: monzoAccount.id,
         monzoAccountName: displayName,
         actualAccountId: actualAccount.id,
-        actualAccountName: actualAccount.name
+        actualAccountName: actualAccount.name,
       });
 
       console.log(chalk.green(`  ✓ Mapped ${displayName} → ${actualAccount.name}`));
@@ -225,15 +236,14 @@ async function mapAccountsAction(): Promise<void> {
     // Validate required configuration
     if (!config.monzo?.accessToken) {
       throw new Error(
-        'Monzo configuration missing. Please run setup command first:\n' +
-        '  actual-monzo setup'
+        'Monzo configuration missing. Please run setup command first:\n' + '  actual-monzo setup'
       );
     }
 
     if (!config.actualBudget?.serverUrl || !config.actualBudget?.password) {
       throw new Error(
         'Actual Budget configuration missing. Please run setup command first:\n' +
-        '  actual-monzo setup'
+          '  actual-monzo setup'
       );
     }
 
@@ -244,12 +254,14 @@ async function mapAccountsAction(): Promise<void> {
         console.log(chalk.dim(`  ${mapping.monzoAccountName} → ${mapping.actualAccountName}`));
       });
 
-      const { overwrite } = await inquirer.prompt([{
-        type: 'confirm',
-        name: 'overwrite',
-        message: 'Do you want to replace these mappings?',
-        default: false
-      }]);
+      const { overwrite } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'overwrite',
+          message: 'Do you want to replace these mappings?',
+          default: false,
+        },
+      ]);
 
       if (!overwrite) {
         console.log(chalk.yellow('\n✓ Keeping existing mappings'));
@@ -267,7 +279,6 @@ async function mapAccountsAction(): Promise<void> {
     console.log(chalk.dim('\nYou can now run: actual-monzo import'));
 
     process.exit(0);
-
   } catch (error) {
     console.error(chalk.red('\n❌ Account mapping failed'));
     console.error(chalk.red(error instanceof Error ? error.message : 'Unknown error'));

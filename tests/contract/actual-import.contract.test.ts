@@ -16,11 +16,11 @@ vi.mock('@actual-app/api', () => ({
   shutdown: vi.fn().mockResolvedValue(undefined as any),
   importTransactions: vi.fn().mockResolvedValue({
     added: ['uuid-1', 'uuid-2'],
-    updated: []
+    updated: [],
   }),
-  getAccounts: vi.fn().mockResolvedValue([
-    { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Checking' }
-  ])
+  getAccounts: vi
+    .fn()
+    .mockResolvedValue([{ id: '550e8400-e29b-41d4-a716-446655440000', name: 'Checking' }]),
 }));
 
 import * as actualApi from '@actual-app/api';
@@ -39,13 +39,13 @@ describe('Actual Budget Import API Contract', () => {
       await actualApi.init({
         serverURL: 'http://localhost:5006',
         password: 'test-password',
-        dataDir: './actual-data'
+        dataDir: './actual-data',
       });
 
       expect(initSpy).toHaveBeenCalledWith({
         serverURL: 'http://localhost:5006',
         password: 'test-password',
-        dataDir: './actual-data'
+        dataDir: './actual-data',
       });
     });
 
@@ -67,7 +67,7 @@ describe('Actual Budget Import API Contract', () => {
         payee_name: 'Tesco',
         notes: 'Monzo: groceries | ID: tx_00009ABC',
         imported_id: 'tx_00009ABC123DEF456',
-        cleared: true
+        cleared: true,
       };
 
       // Validate required fields
@@ -92,7 +92,7 @@ describe('Actual Budget Import API Contract', () => {
 
     it('should validate amount as integer (cents)', () => {
       const validAmounts = [-750, -1250, 5000, 0];
-      const invalidAmounts = [-7.50, 12.5, 'invalid', null];
+      const invalidAmounts = [-7.5, 12.5, 'invalid', null];
 
       validAmounts.forEach(amount => {
         expect(typeof amount).toBe('number');
@@ -111,13 +111,9 @@ describe('Actual Budget Import API Contract', () => {
     it('should validate account UUID format', () => {
       const validUUIDs = [
         '550e8400-e29b-41d4-a716-446655440000',
-        '123e4567-e89b-12d3-a456-426614174000'
+        '123e4567-e89b-12d3-a456-426614174000',
       ];
-      const invalidUUIDs = [
-        'acc_00009ABC',
-        'invalid-uuid',
-        '123-456-789'
-      ];
+      const invalidUUIDs = ['acc_00009ABC', 'invalid-uuid', '123-456-789'];
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -134,7 +130,7 @@ describe('Actual Budget Import API Contract', () => {
       const minimalTransaction = {
         account: mockAccountId,
         date: '2025-09-15',
-        amount: -750
+        amount: -750,
       };
 
       const fullTransaction = {
@@ -144,7 +140,7 @@ describe('Actual Budget Import API Contract', () => {
         payee_name: 'Tesco',
         notes: 'Groceries',
         imported_id: 'tx_123',
-        cleared: true
+        cleared: true,
       };
 
       // Both should be valid structures
@@ -168,15 +164,15 @@ describe('Actual Budget Import API Contract', () => {
           date: '2025-09-15',
           amount: -750,
           payee_name: 'Tesco',
-          imported_id: 'tx_001'
+          imported_id: 'tx_001',
         },
         {
           account: mockAccountId,
           date: '2025-09-14',
           amount: -1250,
           payee_name: 'Pizza Express',
-          imported_id: 'tx_002'
-        }
+          imported_id: 'tx_002',
+        },
       ];
 
       await actualApi.importTransactions(mockAccountId, transactions);
@@ -187,14 +183,14 @@ describe('Actual Budget Import API Contract', () => {
     it('should return added and updated transaction IDs', async () => {
       const mockResponse = {
         added: ['actual-tx-uuid-1', 'actual-tx-uuid-2'],
-        updated: []
+        updated: [],
       };
 
       vi.spyOn(actualApi, 'importTransactions').mockResolvedValue(mockResponse);
 
       const result = await actualApi.importTransactions(mockAccountId, [
         { account: mockAccountId, date: '2025-09-15', amount: -750, imported_id: 'tx_001' },
-        { account: mockAccountId, date: '2025-09-14', amount: -1250, imported_id: 'tx_002' }
+        { account: mockAccountId, date: '2025-09-14', amount: -1250, imported_id: 'tx_002' },
       ]);
 
       expect(result).toEqual(mockResponse);
@@ -212,7 +208,7 @@ describe('Actual Budget Import API Contract', () => {
         date: '2025-09-15',
         amount: -750,
         payee_name: 'Tesco',
-        imported_id: 'tx_00009ABC123DEF456'
+        imported_id: 'tx_00009ABC123DEF456',
       };
 
       expect(newTransaction.imported_id).toBeDefined();
@@ -222,7 +218,7 @@ describe('Actual Budget Import API Contract', () => {
     it('should return updated IDs for duplicate transactions', async () => {
       const mockResponse = {
         added: [],
-        updated: ['actual-tx-uuid-1'] // Existing transaction updated
+        updated: ['actual-tx-uuid-1'], // Existing transaction updated
       };
 
       vi.spyOn(actualApi, 'importTransactions').mockResolvedValue(mockResponse);
@@ -231,7 +227,7 @@ describe('Actual Budget Import API Contract', () => {
         account: mockAccountId,
         date: '2025-09-15',
         amount: -750,
-        imported_id: 'tx_duplicate'
+        imported_id: 'tx_duplicate',
       };
 
       const result = await actualApi.importTransactions(mockAccountId, [duplicateTransaction]);
@@ -244,7 +240,7 @@ describe('Actual Budget Import API Contract', () => {
     it('should handle mix of new and duplicate transactions', async () => {
       const mockResponse = {
         added: ['actual-tx-uuid-1', 'actual-tx-uuid-2'],
-        updated: ['actual-tx-uuid-3']
+        updated: ['actual-tx-uuid-3'],
       };
 
       vi.spyOn(actualApi, 'importTransactions').mockResolvedValue(mockResponse);
@@ -252,7 +248,7 @@ describe('Actual Budget Import API Contract', () => {
       const transactions = [
         { account: mockAccountId, date: '2025-09-15', amount: -750, imported_id: 'tx_new_1' },
         { account: mockAccountId, date: '2025-09-14', amount: -1250, imported_id: 'tx_new_2' },
-        { account: mockAccountId, date: '2025-09-13', amount: -500, imported_id: 'tx_duplicate' }
+        { account: mockAccountId, date: '2025-09-13', amount: -500, imported_id: 'tx_duplicate' },
       ];
 
       const result = await actualApi.importTransactions(mockAccountId, transactions);
@@ -271,7 +267,7 @@ describe('Actual Budget Import API Contract', () => {
         date: '2025-09-15',
         amount: -(i + 1) * 100,
         payee_name: `Merchant ${i}`,
-        imported_id: `tx_${String(i).padStart(3, '0')}`
+        imported_id: `tx_${String(i).padStart(3, '0')}`,
       }));
 
       await actualApi.importTransactions(mockAccountId, batchTransactions);
@@ -283,7 +279,7 @@ describe('Actual Budget Import API Contract', () => {
     it('should handle empty transaction array', async () => {
       const importSpy = vi.spyOn(actualApi, 'importTransactions').mockResolvedValue({
         added: [],
-        updated: []
+        updated: [],
       });
 
       const result = await actualApi.importTransactions(mockAccountId, []);
@@ -324,9 +320,9 @@ describe('Actual Budget Import API Contract', () => {
         new Error('Account not found in budget file')
       );
 
-      await expect(
-        actualApi.importTransactions('invalid-uuid', [])
-      ).rejects.toThrow('Account not found');
+      await expect(actualApi.importTransactions('invalid-uuid', [])).rejects.toThrow(
+        'Account not found'
+      );
     });
 
     it('should handle SDK not initialized error', async () => {
@@ -334,9 +330,9 @@ describe('Actual Budget Import API Contract', () => {
         new Error('SDK not initialized. Call init() first.')
       );
 
-      await expect(
-        actualApi.importTransactions(mockAccountId, [])
-      ).rejects.toThrow('not initialized');
+      await expect(actualApi.importTransactions(mockAccountId, [])).rejects.toThrow(
+        'not initialized'
+      );
     });
 
     it('should handle validation errors', async () => {
@@ -347,7 +343,7 @@ describe('Actual Budget Import API Contract', () => {
       const invalidTransaction = {
         account: mockAccountId,
         date: '2025/09/15', // Invalid format
-        amount: -750
+        amount: -750,
       };
 
       await expect(

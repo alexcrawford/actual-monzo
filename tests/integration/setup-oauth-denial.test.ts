@@ -15,7 +15,7 @@ import * as browserUtils from '../../src/utils/browser-utils';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 // Mock browser utils module
@@ -37,11 +37,14 @@ describe('Integration: OAuth Denial Handling', () => {
     mockServer = {
       start: vi.fn().mockResolvedValue(3000),
       waitForCallback: vi.fn(),
-      shutdown: vi.fn().mockResolvedValue(undefined as any)
+      shutdown: vi.fn().mockResolvedValue(undefined as any),
     };
 
     // Mock browser launch to succeed
-    vi.mocked(browserUtils.launchBrowser).mockResolvedValue({ success: true, url: 'https://auth.monzo.com/oauth/authorize' });
+    vi.mocked(browserUtils.launchBrowser).mockResolvedValue({
+      success: true,
+      url: 'https://auth.monzo.com/oauth/authorize',
+    });
 
     // Default: mock createOAuthCallbackServer to return mockServer
     vi.mocked(oauthServer.createOAuthCallbackServer).mockResolvedValue(mockServer);
@@ -59,13 +62,13 @@ describe('Integration: OAuth Denial Handling', () => {
     mockServer.waitForCallback.mockResolvedValue({
       error: 'access_denied',
       errorDescription: 'The user denied the authorization request',
-      state: 'test-state'
+      state: 'test-state',
     });
 
     // Attempt OAuth flow
     const params = {
       clientId: 'oauth2client_00009abc123def456',
-      clientSecret: 'mnzconf_secret_1234567890abcdef'
+      clientSecret: 'mnzconf_secret_1234567890abcdef',
     };
 
     // Should throw error for access_denied
@@ -99,7 +102,7 @@ describe('Integration: OAuth Denial Handling', () => {
     // Attempt OAuth flow
     const params = {
       clientId: 'oauth2client_00009abc123def456',
-      clientSecret: 'mnzconf_secret_1234567890abcdef'
+      clientSecret: 'mnzconf_secret_1234567890abcdef',
     };
 
     // Should throw error for missing authorization code
@@ -117,13 +120,13 @@ describe('Integration: OAuth Denial Handling', () => {
     // Mock OAuth callback server to return different state
     mockServer.waitForCallback.mockResolvedValue({
       code: 'auth_code_12345',
-      state: 'wrong-state'
+      state: 'wrong-state',
     });
 
     // Attempt OAuth flow
     const params = {
       clientId: 'oauth2client_00009abc123def456',
-      clientSecret: 'mnzconf_secret_1234567890abcdef'
+      clientSecret: 'mnzconf_secret_1234567890abcdef',
     };
 
     // Should throw error for state mismatch
@@ -150,22 +153,20 @@ describe('Integration: OAuth Denial Handling', () => {
     mockServer.waitForCallback.mockImplementation(async () => {
       return {
         code: 'auth_code_12345',
-        state: capturedState
+        state: capturedState,
       };
     });
 
     // Mock token exchange to fail
-    nock('https://api.monzo.com')
-      .post('/oauth2/token')
-      .reply(400, {
-        error: 'invalid_grant',
-        error_description: 'Authorization code has expired'
-      });
+    nock('https://api.monzo.com').post('/oauth2/token').reply(400, {
+      error: 'invalid_grant',
+      error_description: 'Authorization code has expired',
+    });
 
     // Attempt OAuth flow
     const params = {
       clientId: 'oauth2client_00009abc123def456',
-      clientSecret: 'mnzconf_secret_1234567890abcdef'
+      clientSecret: 'mnzconf_secret_1234567890abcdef',
     };
 
     // Should throw error for token exchange failure
@@ -184,13 +185,13 @@ describe('Integration: OAuth Denial Handling', () => {
     mockServer.waitForCallback.mockResolvedValue({
       error: 'access_denied',
       errorDescription: 'The user denied the authorization request',
-      state: 'test-state'
+      state: 'test-state',
     });
 
     // Attempt OAuth flow
     const params = {
       clientId: 'oauth2client_00009abc123def456',
-      clientSecret: 'mnzconf_secret_1234567890abcdef'
+      clientSecret: 'mnzconf_secret_1234567890abcdef',
     };
 
     await expect(service.startOAuthFlow(params)).rejects.toThrow();

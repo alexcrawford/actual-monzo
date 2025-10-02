@@ -27,9 +27,7 @@ async function ensureLogsDirectory(): Promise<void> {
 /**
  * Record an import session to the log file
  */
-export async function recordImportSession(
-  transactionCount: number
-): Promise<void> {
+export async function recordImportSession(transactionCount: number): Promise<void> {
   await ensureLogsDirectory();
 
   const timestamp = new Date().toISOString();

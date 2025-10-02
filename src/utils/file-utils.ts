@@ -7,7 +7,7 @@ import {
   stat,
   copyFile,
   unlink,
-  chmod
+  chmod,
 } from 'fs/promises';
 import { join, dirname, basename, extname, resolve, relative } from 'path';
 import { homedir } from 'os';
@@ -66,21 +66,21 @@ export async function ensureDirectory(dirPath: string): Promise<FileOperationRes
       return {
         success: true,
         path: dirPath,
-        message: 'Directory created successfully'
+        message: 'Directory created successfully',
       };
     }
 
     return {
       success: true,
       path: dirPath,
-      message: 'Directory already exists'
+      message: 'Directory already exists',
     };
   } catch (error) {
     return {
       success: false,
       path: dirPath,
       error: error instanceof Error ? error : new Error(String(error)),
-      message: 'Failed to create directory'
+      message: 'Failed to create directory',
     };
   }
 }
@@ -98,7 +98,7 @@ export async function safeReadFile(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error : new Error(String(error))
+      error: error instanceof Error ? error : new Error(String(error)),
     };
   }
 }
@@ -123,7 +123,7 @@ export async function safeWriteFile(
     await ensureDirectory(parentDir);
 
     // Create backup if requested and file exists
-    if (backup && await pathExists(filePath)) {
+    if (backup && (await pathExists(filePath))) {
       const backupResult = await createBackup(filePath);
       if (!backupResult.success) {
         return backupResult;
@@ -141,14 +141,14 @@ export async function safeWriteFile(
     return {
       success: true,
       path: filePath,
-      message: 'File written successfully'
+      message: 'File written successfully',
     };
   } catch (error) {
     return {
       success: false,
       path: filePath,
       error: error instanceof Error ? error : new Error(String(error)),
-      message: 'Failed to write file'
+      message: 'Failed to write file',
     };
   }
 }
@@ -160,11 +160,7 @@ export async function createBackup(
   filePath: string,
   options: BackupOptions = {}
 ): Promise<FileOperationResult> {
-  const {
-    suffix = '.backup',
-    preserveTimestamp = true,
-    createBackupDir = false
-  } = options;
+  const { suffix = '.backup', preserveTimestamp = true, createBackupDir = false } = options;
 
   try {
     const exists = await pathExists(filePath);
@@ -172,7 +168,7 @@ export async function createBackup(
       return {
         success: false,
         path: filePath,
-        message: 'Source file does not exist'
+        message: 'Source file does not exist',
       };
     }
 
@@ -201,14 +197,14 @@ export async function createBackup(
     return {
       success: true,
       path: backupPath,
-      message: 'Backup created successfully'
+      message: 'Backup created successfully',
     };
   } catch (error) {
     return {
       success: false,
       path: filePath,
       error: error instanceof Error ? error : new Error(String(error)),
-      message: 'Failed to create backup'
+      message: 'Failed to create backup',
     };
   }
 }
@@ -223,7 +219,7 @@ export async function safeDelete(path: string): Promise<FileOperationResult> {
       return {
         success: true,
         path,
-        message: 'Path does not exist (nothing to delete)'
+        message: 'Path does not exist (nothing to delete)',
       };
     }
 
@@ -239,14 +235,14 @@ export async function safeDelete(path: string): Promise<FileOperationResult> {
     return {
       success: true,
       path,
-      message: stats.isDirectory() ? 'Directory deleted successfully' : 'File deleted successfully'
+      message: stats.isDirectory() ? 'Directory deleted successfully' : 'File deleted successfully',
     };
   } catch (error) {
     return {
       success: false,
       path,
       error: error instanceof Error ? error : new Error(String(error)),
-      message: 'Failed to delete path'
+      message: 'Failed to delete path',
     };
   }
 }
@@ -260,7 +256,7 @@ export async function scanDirectory(dirPath: string): Promise<DirectoryInfo> {
     exists: false,
     files: [],
     directories: [],
-    totalSize: 0
+    totalSize: 0,
   };
 
   try {
@@ -474,14 +470,14 @@ export async function createTempFile(
     return {
       success: true,
       path: tempPath,
-      message: 'Temporary file created successfully'
+      message: 'Temporary file created successfully',
     };
   } catch (error) {
     return {
       success: false,
       path: tempDir,
       error: error instanceof Error ? error : new Error(String(error)),
-      message: 'Failed to create temporary file'
+      message: 'Failed to create temporary file',
     };
   }
 }

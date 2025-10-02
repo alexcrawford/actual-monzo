@@ -1,72 +1,72 @@
 # Complete config - both Monzo and Actual Budget configured
 complete:
-  configVersion: "1.0.0"
+  configVersion: '1.0.0'
   monzo:
-    clientId: "oauth2client_00009abc123def456"
-    clientSecret: "mnzconf_secret123xyz789"
-    accessToken: "access_token_valid_complete"
-    refreshToken: "refresh_token_valid_complete"
-    tokenExpiresAt: "2099-12-31T23:59:59.000Z"
-    authorizedAt: "2025-10-01T18:00:00.000Z"
+    clientId: 'oauth2client_00009abc123def456'
+    clientSecret: 'mnzconf_secret123xyz789'
+    accessToken: 'access_token_valid_complete'
+    refreshToken: 'refresh_token_valid_complete'
+    tokenExpiresAt: '2099-12-31T23:59:59.000Z'
+    authorizedAt: '2025-10-01T18:00:00.000Z'
   actualBudget:
-    serverUrl: "http://localhost:5006"
-    password: "test_password_123"
-    dataDirectory: "/Users/test/.actual-budget/data"
-    validatedAt: "2025-10-01T18:05:00.000Z"
-  setupCompletedAt: "2025-10-01T18:05:00.000Z"
+    serverUrl: 'http://localhost:5006'
+    password: 'test_password_123'
+    dataDirectory: '/Users/test/.actual-budget/data'
+    validatedAt: '2025-10-01T18:05:00.000Z'
+  setupCompletedAt: '2025-10-01T18:05:00.000Z'
 
 # Partial Monzo-only config - OAuth done but Actual Budget not configured
 partialMonzoOnly:
-  configVersion: "1.0.0"
+  configVersion: '1.0.0'
   monzo:
-    clientId: "oauth2client_00009abc123def456"
-    clientSecret: "mnzconf_secret123xyz789"
-    accessToken: "access_token_valid_partial"
-    refreshToken: "refresh_token_valid_partial"
-    tokenExpiresAt: "2099-12-31T23:59:59.000Z"
-    authorizedAt: "2025-10-01T18:00:00.000Z"
+    clientId: 'oauth2client_00009abc123def456'
+    clientSecret: 'mnzconf_secret123xyz789'
+    accessToken: 'access_token_valid_partial'
+    refreshToken: 'refresh_token_valid_partial'
+    tokenExpiresAt: '2099-12-31T23:59:59.000Z'
+    authorizedAt: '2025-10-01T18:00:00.000Z'
   actualBudget:
-    serverUrl: "http://localhost:5006"
-    password: "test_password_123"
-    dataDirectory: "/Users/test/.actual-budget/data"
+    serverUrl: 'http://localhost:5006'
+    password: 'test_password_123'
+    dataDirectory: '/Users/test/.actual-budget/data'
 
 # Partial Actual Budget-only config - unlikely but possible
 partialActualOnly:
-  configVersion: "1.0.0"
+  configVersion: '1.0.0'
   monzo:
-    clientId: "oauth2client_00009abc123def456"
-    clientSecret: "mnzconf_secret123xyz789"
+    clientId: 'oauth2client_00009abc123def456'
+    clientSecret: 'mnzconf_secret123xyz789'
   actualBudget:
-    serverUrl: "http://localhost:5006"
-    password: "test_password_123"
-    dataDirectory: "/Users/test/.actual-budget/data"
-    validatedAt: "2025-10-01T18:05:00.000Z"
+    serverUrl: 'http://localhost:5006'
+    password: 'test_password_123'
+    dataDirectory: '/Users/test/.actual-budget/data'
+    validatedAt: '2025-10-01T18:05:00.000Z'
 
 # Expired tokens config - tokenExpiresAt in past
 expiredTokens:
-  configVersion: "1.0.0"
+  configVersion: '1.0.0'
   monzo:
-    clientId: "oauth2client_00009abc123def456"
-    clientSecret: "mnzconf_secret123xyz789"
-    accessToken: "access_token_expired"
-    refreshToken: "refresh_token_expired"
-    tokenExpiresAt: "2025-09-01T12:00:00.000Z"
-    authorizedAt: "2025-09-01T06:00:00.000Z"
+    clientId: 'oauth2client_00009abc123def456'
+    clientSecret: 'mnzconf_secret123xyz789'
+    accessToken: 'access_token_expired'
+    refreshToken: 'refresh_token_expired'
+    tokenExpiresAt: '2025-09-01T12:00:00.000Z'
+    authorizedAt: '2025-09-01T06:00:00.000Z'
   actualBudget:
-    serverUrl: "http://localhost:5006"
-    password: "test_password_123"
-    dataDirectory: "/Users/test/.actual-budget/data"
-    validatedAt: "2025-10-01T18:05:00.000Z"
-  setupCompletedAt: "2025-10-01T18:05:00.000Z"
+    serverUrl: 'http://localhost:5006'
+    password: 'test_password_123'
+    dataDirectory: '/Users/test/.actual-budget/data'
+    validatedAt: '2025-10-01T18:05:00.000Z'
+  setupCompletedAt: '2025-10-01T18:05:00.000Z'
 
 # Malformed config - wrong types
 malformed:
   configVersion: 123
   monzo:
-    clientId: "invalid_prefix_abc123"
+    clientId: 'invalid_prefix_abc123'
     clientSecret: 12345
-    accessToken: "short"
+    accessToken: 'short'
   actualBudget:
-    serverUrl: "not-a-url"
-    password: ""
-    dataDirectory: "./relative/path"
+    serverUrl: 'not-a-url'
+    password: ''
+    dataDirectory: './relative/path'

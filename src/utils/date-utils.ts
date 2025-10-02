@@ -25,8 +25,7 @@ export function validateDateString(dateStr: string): Date {
 
   if (!dateRegex.test(dateStr)) {
     throw new Error(
-      `Invalid date format: ${dateStr}\n` +
-      `Expected format: YYYY-MM-DD (e.g., 2025-09-15)`
+      `Invalid date format: ${dateStr}\n` + `Expected format: YYYY-MM-DD (e.g., 2025-09-15)`
     );
   }
 
@@ -71,9 +70,7 @@ export function parseDateRange(startStr: string, endStr: string): DateRange {
   const end = validateDateString(endStr);
 
   if (start > end) {
-    throw new Error(
-      `Start date (${startStr}) must be before or equal to end date (${endStr})`
-    );
+    throw new Error(`Start date (${startStr}) must be before or equal to end date (${endStr})`);
   }
 
   if (start > new Date()) {
@@ -84,7 +81,7 @@ export function parseDateRange(startStr: string, endStr: string): DateRange {
   if (daysDiff > 90) {
     throw new Error(
       `Date range too large (${daysDiff} days). Maximum: 90 days\n` +
-      `Consider breaking into smaller imports`
+        `Consider breaking into smaller imports`
     );
   }
 

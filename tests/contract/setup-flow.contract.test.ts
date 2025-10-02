@@ -21,12 +21,12 @@ import { ConfigState } from '../../src/types/setup';
 // Mock filesystem
 vi.mock('fs/promises', () => ({
   ...vol.promises,
-  default: vol.promises
+  default: vol.promises,
 }));
 
 vi.mock('@actual-app/api', () => ({
   init: vi.fn(),
-  shutdown: vi.fn()
+  shutdown: vi.fn(),
 }));
 
 describe('Setup Flow Orchestration Contract', () => {
@@ -53,7 +53,7 @@ describe('Setup Flow Orchestration Contract', () => {
         accessToken: 'access_token_new',
         refreshToken: 'refresh_token_new',
         tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        authorizedAt: new Date().toISOString()
+        authorizedAt: new Date().toISOString(),
       };
 
       // Mock Actual Budget success
@@ -61,12 +61,12 @@ describe('Setup Flow Orchestration Contract', () => {
         serverUrl: 'http://localhost:5006',
         password: 'test_password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       };
 
       const result = await service.runFullSetup({
         monzo: mockOAuthResult,
-        actualBudget: mockActualResult
+        actualBudget: mockActualResult,
       });
 
       expect(result.success).toBe(true);
@@ -83,7 +83,7 @@ describe('Setup Flow Orchestration Contract', () => {
         accessToken: 'access_token_new',
         refreshToken: 'refresh_token_new',
         tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        authorizedAt: new Date().toISOString()
+        authorizedAt: new Date().toISOString(),
       };
 
       // Simulate Actual Budget failure
@@ -107,7 +107,7 @@ describe('Setup Flow Orchestration Contract', () => {
         accessToken: 'access_token_existing',
         refreshToken: 'refresh_token_existing',
         tokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        authorizedAt: new Date().toISOString()
+        authorizedAt: new Date().toISOString(),
       };
 
       await service.saveMonzoConfig(existingMonzoConfig);
@@ -131,15 +131,15 @@ describe('Setup Flow Orchestration Contract', () => {
           accessToken: 'access_token',
           refreshToken: 'refresh_token',
           tokenExpiresAt: new Date().toISOString(),
-          authorizedAt: new Date().toISOString()
+          authorizedAt: new Date().toISOString(),
         },
         actualBudget: {
           serverUrl: 'http://localhost:5006',
           password: 'password',
           dataDirectory: '/tmp/actual',
-          validatedAt: new Date().toISOString()
+          validatedAt: new Date().toISOString(),
         },
-        setupCompletedAt: new Date().toISOString()
+        setupCompletedAt: new Date().toISOString(),
       };
 
       await service.saveConfig(mockConfig);
@@ -160,7 +160,7 @@ describe('Setup Flow Orchestration Contract', () => {
         accessToken: 'token',
         refreshToken: 'refresh',
         tokenExpiresAt: new Date().toISOString(),
-        authorizedAt: new Date().toISOString()
+        authorizedAt: new Date().toISOString(),
       });
 
       let config = await service.loadConfig();
@@ -171,7 +171,7 @@ describe('Setup Flow Orchestration Contract', () => {
         serverUrl: 'http://localhost:5006',
         password: 'password',
         dataDirectory: '/tmp/actual',
-        validatedAt: new Date().toISOString()
+        validatedAt: new Date().toISOString(),
       });
 
       config = await service.loadConfig();

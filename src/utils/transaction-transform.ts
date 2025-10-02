@@ -36,6 +36,6 @@ export function transformMonzoToActual(
     payee_name,
     notes,
     imported_id: monzoTx.id,
-    cleared
+    cleared,
   };
 }

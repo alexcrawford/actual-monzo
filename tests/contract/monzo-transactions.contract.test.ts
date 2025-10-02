@@ -24,45 +24,45 @@ describe('Monzo Transactions API Contract', () => {
   describe('Request Format', () => {
     it('should include correct headers with Bearer token', async () => {
       const mockGet = vi.spyOn(axios, 'get').mockResolvedValue({
-        data: { transactions: [] }
+        data: { transactions: [] },
       });
 
       await axios.get(`${baseURL}/transactions`, {
         headers: {
-          'Authorization': `Bearer ${mockAccessToken}`
+          Authorization: `Bearer ${mockAccessToken}`,
         },
         params: {
-          account_id: mockAccountId
-        }
+          account_id: mockAccountId,
+        },
       });
 
       expect(mockGet).toHaveBeenCalledWith(
         expect.stringContaining('/transactions'),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': `Bearer ${mockAccessToken}`
-          })
+            Authorization: `Bearer ${mockAccessToken}`,
+          }),
         })
       );
     });
 
     it('should include required query parameters', async () => {
       const mockGet = vi.spyOn(axios, 'get').mockResolvedValue({
-        data: { transactions: [] }
+        data: { transactions: [] },
       });
 
       const since = '2025-09-01T00:00:00Z';
       const before = '2025-09-30T23:59:59Z';
 
       await axios.get(`${baseURL}/transactions`, {
-        headers: { 'Authorization': `Bearer ${mockAccessToken}` },
+        headers: { Authorization: `Bearer ${mockAccessToken}` },
         params: {
           account_id: mockAccountId,
           since,
           before,
           'expand[]': 'merchant',
-          limit: 100
-        }
+          limit: 100,
+        },
       });
 
       expect(mockGet).toHaveBeenCalledWith(
@@ -73,31 +73,31 @@ describe('Monzo Transactions API Contract', () => {
             since,
             before,
             'expand[]': 'merchant',
-            limit: 100
-          })
+            limit: 100,
+          }),
         })
       );
     });
 
     it('should include expand[]=merchant parameter', async () => {
       const mockGet = vi.spyOn(axios, 'get').mockResolvedValue({
-        data: { transactions: [] }
+        data: { transactions: [] },
       });
 
       await axios.get(`${baseURL}/transactions`, {
-        headers: { 'Authorization': `Bearer ${mockAccessToken}` },
+        headers: { Authorization: `Bearer ${mockAccessToken}` },
         params: {
           account_id: mockAccountId,
-          'expand[]': 'merchant'
-        }
+          'expand[]': 'merchant',
+        },
       });
 
       expect(mockGet).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           params: expect.objectContaining({
-            'expand[]': 'merchant'
-          })
+            'expand[]': 'merchant',
+          }),
         })
       );
     });
@@ -117,14 +117,14 @@ describe('Monzo Transactions API Contract', () => {
             merchant: {
               id: 'merch_00009XYZ',
               name: 'Tesco',
-              category: 'groceries'
+              category: 'groceries',
             },
             notes: '',
             settled: '2025-09-15T14:30:05.000Z',
             category: 'groceries',
-            decline_reason: null
-          }
-        ]
+            decline_reason: null,
+          },
+        ],
       };
 
       expect(mockResponse.transactions).toHaveLength(1);
@@ -144,12 +144,12 @@ describe('Monzo Transactions API Contract', () => {
         description: 'Pizza Express',
         merchant: {
           name: 'Pizza Express',
-          category: 'eating_out'
+          category: 'eating_out',
         },
         notes: 'Dinner with friends',
         settled: '2025-09-14T19:45:03.000Z',
         category: 'eating_out',
-        decline_reason: null
+        decline_reason: null,
       };
 
       // Validate field types
@@ -172,12 +172,12 @@ describe('Monzo Transactions API Contract', () => {
         description: 'Coffee Shop',
         merchant: {
           name: 'Starbucks',
-          category: 'eating_out'
+          category: 'eating_out',
         },
         notes: '',
         settled: '2025-09-10T10:00:05.000Z',
         category: 'eating_out',
-        decline_reason: null
+        decline_reason: null,
       };
 
       expect(transaction.merchant).not.toBeNull();
@@ -193,8 +193,8 @@ describe('Monzo Transactions API Contract', () => {
           id: `tx_${String(i).padStart(3, '0')}`,
           amount: -100,
           created: `2025-09-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
-          decline_reason: null
-        }))
+          decline_reason: null,
+        })),
       };
 
       expect(mockResponse.transactions).toHaveLength(100);
@@ -209,7 +209,7 @@ describe('Monzo Transactions API Contract', () => {
         id: 'tx_100',
         amount: -100,
         created: '2025-09-15T14:30:00.000Z',
-        decline_reason: null
+        decline_reason: null,
       };
 
       // For next page, we add 1ms to avoid fetching the same transaction
@@ -226,8 +226,8 @@ describe('Monzo Transactions API Contract', () => {
           id: `tx_${String(i).padStart(3, '0')}`,
           amount: -100,
           created: `2025-09-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
-          decline_reason: null
-        }))
+          decline_reason: null,
+        })),
       };
 
       expect(mockResponse.transactions).toHaveLength(42);
@@ -237,7 +237,7 @@ describe('Monzo Transactions API Contract', () => {
 
     it('should handle empty response (no transactions)', () => {
       const mockResponse = {
-        transactions: []
+        transactions: [],
       };
 
       expect(mockResponse.transactions).toHaveLength(0);
@@ -246,20 +246,20 @@ describe('Monzo Transactions API Contract', () => {
 
     it('should preserve since and before parameters across pages', async () => {
       const mockGet = vi.spyOn(axios, 'get').mockResolvedValue({
-        data: { transactions: [] }
+        data: { transactions: [] },
       });
 
       const since = '2025-09-01T00:00:00Z';
       const before = '2025-09-30T23:59:59Z';
 
       await axios.get(`${baseURL}/transactions`, {
-        headers: { 'Authorization': `Bearer ${mockAccessToken}` },
+        headers: { Authorization: `Bearer ${mockAccessToken}` },
         params: {
           account_id: mockAccountId,
           since,
           before,
-          limit: 100
-        }
+          limit: 100,
+        },
       });
 
       expect(mockGet).toHaveBeenCalledWith(
@@ -268,8 +268,8 @@ describe('Monzo Transactions API Contract', () => {
           params: expect.objectContaining({
             since,
             before,
-            limit: 100
-          })
+            limit: 100,
+          }),
         })
       );
     });
@@ -288,7 +288,7 @@ describe('Monzo Transactions API Contract', () => {
         notes: '',
         settled: '',
         category: 'general',
-        decline_reason: 'INSUFFICIENT_FUNDS'
+        decline_reason: 'INSUFFICIENT_FUNDS',
       };
 
       expect(declinedTransaction.decline_reason).not.toBeNull();
@@ -300,7 +300,7 @@ describe('Monzo Transactions API Contract', () => {
         { id: 'tx_001', amount: -100, decline_reason: null },
         { id: 'tx_002', amount: -200, decline_reason: 'INSUFFICIENT_FUNDS' },
         { id: 'tx_003', amount: -300, decline_reason: null },
-        { id: 'tx_004', amount: -400, decline_reason: 'CARD_BLOCKED' }
+        { id: 'tx_004', amount: -400, decline_reason: 'CARD_BLOCKED' },
       ];
 
       const validTransactions = transactions.filter(tx => tx.decline_reason === null);
@@ -318,23 +318,23 @@ describe('Monzo Transactions API Contract', () => {
           status: 401,
           data: {
             error: 'unauthorized',
-            message: 'Invalid or expired access token'
-          }
-        }
+            message: 'Invalid or expired access token',
+          },
+        },
       });
 
       await expect(
         axios.get(`${baseURL}/transactions`, {
-          headers: { 'Authorization': 'Bearer invalid_token' },
-          params: { account_id: mockAccountId }
+          headers: { Authorization: 'Bearer invalid_token' },
+          params: { account_id: mockAccountId },
         })
       ).rejects.toMatchObject({
         response: expect.objectContaining({
           status: 401,
           data: expect.objectContaining({
-            error: 'unauthorized'
-          })
-        })
+            error: 'unauthorized',
+          }),
+        }),
       });
 
       expect(mockGet).toHaveBeenCalled();
@@ -346,23 +346,23 @@ describe('Monzo Transactions API Contract', () => {
           status: 429,
           data: {
             error: 'too_many_requests',
-            message: 'Rate limit exceeded'
-          }
-        }
+            message: 'Rate limit exceeded',
+          },
+        },
       });
 
       await expect(
         axios.get(`${baseURL}/transactions`, {
-          headers: { 'Authorization': `Bearer ${mockAccessToken}` },
-          params: { account_id: mockAccountId }
+          headers: { Authorization: `Bearer ${mockAccessToken}` },
+          params: { account_id: mockAccountId },
         })
       ).rejects.toMatchObject({
         response: expect.objectContaining({
           status: 429,
           data: expect.objectContaining({
-            error: 'too_many_requests'
-          })
-        })
+            error: 'too_many_requests',
+          }),
+        }),
       });
 
       expect(mockGet).toHaveBeenCalled();
@@ -374,23 +374,23 @@ describe('Monzo Transactions API Contract', () => {
           status: 500,
           data: {
             error: 'internal_server_error',
-            message: 'An error occurred processing your request'
-          }
-        }
+            message: 'An error occurred processing your request',
+          },
+        },
       });
 
       await expect(
         axios.get(`${baseURL}/transactions`, {
-          headers: { 'Authorization': `Bearer ${mockAccessToken}` },
-          params: { account_id: mockAccountId }
+          headers: { Authorization: `Bearer ${mockAccessToken}` },
+          params: { account_id: mockAccountId },
         })
       ).rejects.toMatchObject({
         response: expect.objectContaining({
           status: 500,
           data: expect.objectContaining({
-            error: 'internal_server_error'
-          })
-        })
+            error: 'internal_server_error',
+          }),
+        }),
       });
 
       expect(mockGet).toHaveBeenCalled();
@@ -413,7 +413,7 @@ describe('Monzo Transactions API Contract', () => {
 
     it('should validate amount is integer (pence)', () => {
       const validAmounts = [-750, -1250, 5000, 0];
-      const invalidAmounts = [-7.50, 12.5, 'invalid'];
+      const invalidAmounts = [-7.5, 12.5, 'invalid'];
 
       validAmounts.forEach(amount => {
         expect(typeof amount).toBe('number');
@@ -433,7 +433,7 @@ describe('Monzo Transactions API Contract', () => {
       const validDates = [
         '2025-09-15T14:30:00.000Z',
         '2025-09-14T19:45:03.000Z',
-        '2025-10-01T00:00:00.000Z'
+        '2025-10-01T00:00:00.000Z',
       ];
 
       validDates.forEach(dateStr => {

@@ -8,7 +8,7 @@ import type {
   DateRange,
   ImportSession,
   FailedAccountRecord,
-  ActualTransaction
+  ActualTransaction,
 } from '../types/import.js';
 import type { Config } from '../utils/config-schema.js';
 import { MonzoApiClient } from './monzo-api-client.js';
@@ -49,9 +49,8 @@ export class ImportService {
       successfulAccounts: [],
       failedAccounts: [],
       totalTransactions: 0,
-      declinedFiltered: 0
+      declinedFiltered: 0,
     };
-
 
     // Initialize Actual Budget SDK if not dry run
     if (!dryRun) {
@@ -67,7 +66,7 @@ export class ImportService {
         await actualApi.init({
           serverURL: config.actualBudget.serverUrl,
           password: config.actualBudget.password,
-          dataDir: dataDir
+          dataDir: dataDir,
         });
 
         // Get and download the budget file
@@ -79,7 +78,6 @@ export class ImportService {
         // Use first budget's groupId
         const budgetId = budgets[0].groupId;
         await actualApi.downloadBudget(budgetId);
-
       } catch (error) {
         throw new Error(
           `Failed to initialize Actual Budget: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -130,14 +128,13 @@ export class ImportService {
           }
 
           session.successfulAccounts.push(mapping.monzoAccountId);
-
         } catch (error) {
           // Record failure but continue with other accounts
           const failureRecord: FailedAccountRecord = {
             accountId: mapping.monzoAccountId,
             accountName: mapping.monzoAccountName,
             error: error instanceof Error ? error : new Error(String(error)),
-            message: error instanceof Error ? error.message : String(error)
+            message: error instanceof Error ? error.message : String(error),
           };
 
           session.failedAccounts.push(failureRecord);
@@ -148,7 +145,6 @@ export class ImportService {
       if (!dryRun) {
         await recordImportSession(session.totalTransactions);
       }
-
     } finally {
       // Always disconnect from Actual Budget
       if (!dryRun) {
