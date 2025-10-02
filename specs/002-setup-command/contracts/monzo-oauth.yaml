@@ -1,0 +1,359 @@
+# Monzo OAuth 2.0 Flow Contract
+# Defines interactions with Monzo OAuth endpoints
+
+api_base: "https://api.monzo.com"
+auth_base: "https://auth.monzo.com"
+
+oauth_flow_type: authorization_code
+client_type: confidential  # CLI can protect client secret
+
+endpoints:
+  authorization:
+    description: Redirect user to Monzo for authentication and authorization
+    url: "https://auth.monzo.com/"
+    method: GET
+
+    parameters:
+      client_id:
+        type: string
+        required: true
+        description: OAuth client ID from Monzo developer portal
+        example: "oauth2client_00009abc123"
+
+      redirect_uri:
+        type: string
+        required: true
+        description: Callback URL (must be registered with Monzo)
+        format: "http://localhost:{PORT}/callback"
+        constraints:
+          - Must match Monzo developer portal redirect URI exactly
+          - Port must be in range 3000-3010
+        example: "http://localhost:3000/callback"
+
+      response_type:
+        type: string
+        required: true
+        fixed_value: "code"
+        description: OAuth grant type (authorization code)
+
+      state:
+        type: string
+        required: true
+        description: CSRF protection token (random UUID)
+        format: uuid_v4
+        validation:
+          - Must be cryptographically random (128 bits)
+          - Must be validated on callback
+        example: "550e8400-e29b-41d4-a716-446655440000"
+
+    user_flow:
+      - User enters email address in browser
+      - Monzo sends authentication email
+      - User clicks link in email
+      - Monzo app opens on mobile device
+      - User approves access with PIN/biometric (Strong Customer Authentication)
+      - Browser redirects to redirect_uri with code
+
+    browser_response:
+      success:
+        redirect_to: "{redirect_uri}?code={authorization_code}&state={state}"
+        example: "http://localhost:3000/callback?code=abc123xyz&state=550e8400..."
+
+      error:
+        redirect_to: "{redirect_uri}?error={error_code}&error_description={description}&state={state}"
+        possible_errors:
+          - error: access_denied
+            description: "User denied authorization in Monzo app"
+          - error: invalid_request
+            description: "Missing or invalid parameters"
+
+  token:
+    description: Exchange authorization code for access and refresh tokens
+    url: "https://api.monzo.com/oauth2/token"
+    method: POST
+    content_type: "application/x-www-form-urlencoded"
+
+    request_body:
+      grant_type:
+        type: string
+        required: true
+        fixed_value: "authorization_code"
+
+      code:
+        type: string
+        required: true
+        description: Authorization code from callback
+        expires: "10 minutes after issuance"
+
+      client_id:
+        type: string
+        required: true
+        description: Same client ID used in authorization
+
+      client_secret:
+        type: string
+        required: true
+        description: OAuth client secret (confidential clients only)
+
+      redirect_uri:
+        type: string
+        required: true
+        description: Must exactly match redirect_uri from authorization request
+
+    response_success:
+      status_code: 200
+      content_type: "application/json"
+
+      body:
+        access_token:
+          type: string
+          description: OAuth access token for API requests
+          format: opaque_string
+          example: "access_token_abc123xyz..."
+
+        refresh_token:
+          type: string
+          description: Refresh token (confidential clients only)
+          format: opaque_string
+          example: "refresh_token_xyz789abc..."
+
+        expires_in:
+          type: integer
+          description: Access token TTL in seconds
+          value: 21600  # 6 hours
+
+        token_type:
+          type: string
+          fixed_value: "Bearer"
+          description: HTTP Authorization header type
+
+    response_error:
+      status_code: 400 | 401
+      content_type: "application/json"
+
+      body:
+        error:
+          type: string
+          possible_values:
+            - invalid_grant: "Authorization code expired or invalid"
+            - invalid_client: "Client ID or secret incorrect"
+            - unauthorized_client: "Client not authorized for this grant type"
+
+        error_description:
+          type: string
+          description: Human-readable error explanation
+
+  refresh:
+    description: Refresh expired access token using refresh token (future enhancement)
+    url: "https://api.monzo.com/oauth2/token"
+    method: POST
+    content_type: "application/x-www-form-urlencoded"
+
+    request_body:
+      grant_type:
+        type: string
+        required: true
+        fixed_value: "refresh_token"
+
+      refresh_token:
+        type: string
+        required: true
+        description: Refresh token from initial token exchange
+
+      client_id:
+        type: string
+        required: true
+
+      client_secret:
+        type: string
+        required: true
+
+    response:
+      description: Same format as token endpoint response
+      note: New access_token issued, refresh_token may be rotated
+
+  logout:
+    description: Invalidate access token (future enhancement)
+    url: "https://api.monzo.com/oauth2/logout"
+    method: POST
+    headers:
+      Authorization: "Bearer {access_token}"
+
+    response:
+      status_code: 200
+      description: Token invalidated successfully
+
+  whoami:
+    description: Validate token and get user info (used for token validation)
+    url: "https://api.monzo.com/ping/whoami"
+    method: GET
+    headers:
+      Authorization: "Bearer {access_token}"
+
+    response_success:
+      status_code: 200
+      body:
+        authenticated:
+          type: boolean
+          value: true
+
+        client_id:
+          type: string
+          description: OAuth client ID
+
+        user_id:
+          type: string
+          description: Monzo user ID
+
+    response_error:
+      status_code: 401
+      description: Token invalid or expired
+
+token_lifecycle:
+  access_token:
+    lifetime: 6 hours (21600 seconds)
+    storage: config.yaml (monzo.accessToken)
+    usage: HTTP Authorization header for all API requests
+    expiry_handling: |
+      Compare monzo.tokenExpiresAt to current time.
+      If expired, use refresh_token to obtain new access_token.
+      If refresh fails, re-run OAuth flow.
+
+  refresh_token:
+    lifetime: Does not expire automatically
+    revocation: |
+      - User revokes app access in Monzo app settings
+      - 90-day re-authentication requirement (Monzo policy)
+      - New access token issued invalidates old refresh token
+    storage: config.yaml (monzo.refreshToken)
+    usage: Token refresh endpoint only (not for API requests)
+
+authentication_requirements:
+  strong_customer_authentication: true
+  mobile_app_required: true
+  description: |
+    Monzo implements Strong Customer Authentication (SCA) per PSD2.
+    After user authenticates via email, they must approve access in
+    Monzo mobile app using PIN, fingerprint, or Face ID.
+
+security_considerations:
+  state_parameter:
+    purpose: CSRF protection
+    generation: crypto.randomUUID() (UUID v4)
+    validation: Must match value sent in authorization request
+    storage: In-memory during OAuth flow (not persisted)
+
+  client_secret:
+    protection: |
+      Confidential client - secret stored in config.yaml (plain text).
+      Acceptable per spec clarification (read-only transaction access).
+
+    caution: |
+      Do not commit config.yaml to version control.
+      Users should protect config file with file permissions.
+
+  redirect_uri:
+    localhost_only: true
+    binding: 127.0.0.1 (no external access)
+    format: "http://localhost:{PORT}/callback"
+    server_lifecycle: Ephemeral (shutdown after callback received)
+
+rate_limiting:
+  policy: Not specified in Monzo public docs
+  recommendation: Respect standard OAuth flow (one request per user action)
+  setup_command_impact: Minimal (3 requests total: authorize, token, whoami)
+
+error_handling:
+  network_errors:
+    - Connection refused → "Cannot reach Monzo API. Check internet connection."
+    - Timeout → "Monzo API request timed out. Please retry."
+    - DNS failure → "Cannot resolve auth.monzo.com. Check DNS settings."
+
+  oauth_errors:
+    - access_denied → "Authorization denied. Please approve access in Monzo app."
+    - invalid_grant → "Authorization code expired. Please retry setup."
+    - invalid_client → "Invalid client credentials. Check client ID and secret."
+
+  token_errors:
+    - 401 on API call → "Access token expired. Re-run setup to re-authorize."
+    - 403 forbidden → "Insufficient permissions. May require re-authorization."
+
+testing_strategy:
+  mock_authorization:
+    description: |
+      In tests, bypass browser launch and directly call callback with code.
+      Use test OAuth server that returns predictable authorization codes.
+
+  mock_token_exchange:
+    description: |
+      Mock HTTP POST to token endpoint, return fake tokens.
+      Validate request body parameters are correct.
+
+  mock_whoami:
+    description: |
+      Mock /ping/whoami to return authenticated: true for valid test tokens.
+      Return 401 for invalid/expired test tokens.
+
+contract_tests:
+  - test: valid_authorization_url_generation
+    verify: URL contains correct client_id, redirect_uri, response_type, state
+
+  - test: state_parameter_validation
+    verify: Callback state matches sent state (CSRF protection)
+
+  - test: token_exchange_success
+    verify: POST to token endpoint returns access_token and refresh_token
+
+  - test: token_exchange_invalid_code
+    verify: Invalid code returns error with clear message
+
+  - test: token_validation_with_whoami
+    verify: /ping/whoami confirms token is valid
+
+example_full_flow:
+  step_1_authorization:
+    url: "https://auth.monzo.com/?client_id=oauth2client_123&redirect_uri=http://localhost:3000/callback&response_type=code&state=uuid-abc-123"
+    user_action: "Authenticate and approve in mobile app"
+
+  step_2_callback:
+    redirect: "http://localhost:3000/callback?code=auth_code_xyz789&state=uuid-abc-123"
+    validation: "Verify state matches uuid-abc-123"
+
+  step_3_token_exchange:
+    request:
+      method: POST
+      url: "https://api.monzo.com/oauth2/token"
+      body:
+        grant_type: "authorization_code"
+        code: "auth_code_xyz789"
+        client_id: "oauth2client_123"
+        client_secret: "mnzconf_secret456"
+        redirect_uri: "http://localhost:3000/callback"
+
+    response:
+      access_token: "access_token_abc123..."
+      refresh_token: "refresh_token_xyz789..."
+      expires_in: 21600
+      token_type: "Bearer"
+
+  step_4_validation:
+    request:
+      method: GET
+      url: "https://api.monzo.com/ping/whoami"
+      headers:
+        Authorization: "Bearer access_token_abc123..."
+
+    response:
+      authenticated: true
+      client_id: "oauth2client_123"
+      user_id: "user_00009abc"
+
+  step_5_storage:
+    config_yaml:
+      monzo:
+        clientId: "oauth2client_123"
+        clientSecret: "mnzconf_secret456"
+        accessToken: "access_token_abc123..."
+        refreshToken: "refresh_token_xyz789..."
+        tokenExpiresAt: "2025-10-01T18:00:00.000Z"  # now + 6 hours
+        authorizedAt: "2025-10-01T12:00:00.000Z"

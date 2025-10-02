@@ -1,0 +1,389 @@
+# Actual Budget Connection Validation Contract
+# Defines validation process for Actual Budget server configuration
+
+api_base: "user-provided"  # Server URL configured during setup
+sdk_package: "@actual-app/api"
+sdk_version: "25.x"
+
+connection_validation:
+  method: init
+  description: |-
+    Primary entry point for Actual Budget SDK. Performs complete validation:
+    - Network connectivity to server
+    - Authentication with provided password
+    - File system access to data directory
+    If init() succeeds, connection is fully validated and usable.
+
+  function_signature:
+    name: "actual.init"
+    async: true
+    parameters:
+      serverURL:
+        type: string
+        required: true
+        description: Actual Budget server URL
+        format: "http(s)://hostname:port"
+        validation:
+          - valid_http_https_url
+          - no_trailing_slash
+        examples:
+          - "http://localhost:5006"
+          - "https://budget.example.com"
+
+      password:
+        type: string
+        required: true
+        description: Server password for authentication
+        validation:
+          - non_empty
+        security: Plain text acceptable per spec clarification
+
+      dataDir:
+        type: string
+        required: true
+        description: Local directory for budget data cache
+        format: absolute_path
+        validation:
+          - absolute_path (starts with / or drive letter)
+          - directory_exists_or_creatable
+          - directory_writable
+        examples:
+          - "/Users/alex/.actual-budget/data"
+          - "~/.actual-budget/data" (expanded to absolute)
+          - "C:\\Users\\Alex\\.actual-budget\\data" (Windows)
+
+  success_behavior:
+    description: |-
+      init() completes without throwing exception.
+      SDK is ready for budget operations.
+      Connection validated successfully.
+
+    side_effects:
+      - Creates data directory if not exists
+      - Downloads budget metadata from server
+      - Establishes authenticated session
+      - Writes cache files to dataDir
+
+    validation_criteria:
+      - serverURL is reachable (no network error)
+      - password is correct (no auth error)
+      - dataDir is writable (no IO error)
+      - budget data downloaded successfully
+
+  error_behavior:
+    description: |-
+      init() throws exception with error details.
+      Exception should be caught and translated to user-friendly message.
+
+    error_types:
+      network_error:
+        description: Server unreachable or network failure
+        detection: Connection timeout, DNS failure, connection refused
+        user_message: "Cannot reach Actual Budget server at {serverURL}. Check server is running and URL is correct."
+        recovery_actions:
+          - "Verify server is running (docker ps, systemctl status, etc.)"
+          - "Check firewall/network settings"
+          - "Try different URL or port"
+          - "Retry connection"
+
+      auth_error:
+        description: Invalid password or authentication failure
+        detection: 401 Unauthorized, 403 Forbidden responses
+        user_message: "Invalid password for Actual Budget server. Please check your server password."
+        recovery_actions:
+          - "Re-enter password"
+          - "Verify password in server configuration"
+          - "Reset server password if forgotten"
+
+      io_error:
+        description: Cannot write to data directory
+        detection: EACCES, EROFS, ENOENT filesystem errors
+        user_message: "Cannot write to directory {dataDir}. Check path and permissions."
+        recovery_actions:
+          - "Choose different directory"
+          - "Create directory manually: mkdir -p {dataDir}"
+          - "Fix permissions: chmod 755 {dataDir}"
+          - "Check disk space availability"
+
+      unknown_error:
+        description: Unexpected error from SDK
+        detection: Any other exception type
+        user_message: "Unexpected error connecting to Actual Budget: {error.message}"
+        recovery_actions:
+          - "Retry connection"
+          - "Check server logs for details"
+          - "Report issue if problem persists"
+
+  cleanup:
+    method: disconnect
+    description: |-
+      Cleanup SDK connection after validation.
+      Always call disconnect() after init(), even during setup validation.
+      Prevents resource leaks and ensures clean state.
+
+    function_signature:
+      name: "actual.disconnect"
+      async: true
+      parameters: none
+
+    when_to_call:
+      - After successful validation (before saving config)
+      - After failed validation (in error handler)
+      - In try/finally block to ensure cleanup
+
+configuration_persistence:
+  location: "config.yaml"
+  format: yaml
+
+  schema:
+    actualBudget:
+      serverUrl:
+        type: string
+        description: Validated server URL
+        example: "http://localhost:5006"
+
+      password:
+        type: string
+        description: Server password (plain text)
+        example: "my-budget-password"
+
+      dataDirectory:
+        type: string
+        description: Absolute path to data directory
+        example: "/Users/alex/.actual-budget/data"
+
+      validatedAt:
+        type: string
+        description: ISO 8601 timestamp of successful validation
+        format: iso_8601_datetime
+        example: "2025-10-01T12:05:00.000Z"
+        presence: Only set after successful init()
+
+validation_flow:
+  step_1_collect_credentials:
+    prompt: "Enter your Actual Budget server URL:"
+    validation: Valid HTTP/HTTPS URL
+    default: "http://localhost:5006"
+
+  step_2_collect_password:
+    prompt: "Enter your Actual Budget server password:"
+    validation: Non-empty string
+    masked: true
+
+  step_3_collect_data_dir:
+    prompt: "Enter budget data directory path:"
+    validation: Absolute path
+    default: "~/.actual-budget/data"
+
+  step_4_validate:
+    action: Display spinner "Validating Actual Budget connection..."
+    call: |
+      await actual.init({
+        serverURL: serverUrl,
+        password: password,
+        dataDir: dataDirectory
+      });
+
+    on_success:
+      - Stop spinner with success message
+      - Set validatedAt timestamp
+      - Save configuration to config.yaml
+      - Display success message
+
+    on_error:
+      - Stop spinner with failure message
+      - Display specific error message
+      - Display recovery actions
+      - Prompt for retry or change credentials
+
+  step_5_cleanup:
+    action: Always call disconnect()
+    call: "await actual.disconnect();"
+
+retry_strategy:
+  on_network_error:
+    options:
+      - label: "Retry with same credentials"
+        action: retry_step_4_validate
+      - label: "Change server URL"
+        action: return_to_step_1
+      - label: "Exit setup"
+        action: exit_with_code_1
+
+  on_auth_error:
+    options:
+      - label: "Re-enter password"
+        action: return_to_step_2 (preserve URL and directory)
+      - label: "Change all credentials"
+        action: return_to_step_1
+      - label: "Exit setup"
+        action: exit_with_code_1
+
+  on_io_error:
+    options:
+      - label: "Choose different directory"
+        action: return_to_step_3 (preserve URL and password)
+      - label: "Fix permissions and retry"
+        action: retry_step_4_validate
+      - label: "Exit setup"
+        action: exit_with_code_1
+
+testing_strategy:
+  mock_init:
+    description: |-
+      Mock @actual-app/api module in tests.
+      Return predictable success/failure based on test scenario.
+
+    success_case:
+      mock: "actual.init() resolves without throwing"
+      verify: "validatedAt timestamp set"
+
+    network_error_case:
+      mock: "actual.init() throws Error with 'ECONNREFUSED'"
+      verify: "User sees network error message with recovery actions"
+
+    auth_error_case:
+      mock: "actual.init() throws Error with '401 Unauthorized'"
+      verify: "User sees auth error message, prompted for new password"
+
+    io_error_case:
+      mock: "actual.init() throws Error with 'EACCES'"
+      verify: "User sees IO error message, prompted for new directory"
+
+  mock_disconnect:
+    description: |-
+      Mock disconnect() to verify cleanup called.
+      Should be called in both success and error paths.
+
+    verify: "disconnect() called exactly once per init() attempt"
+
+contract_tests:
+  - test: valid_connection_success
+    given: Server reachable, password correct, dataDir writable
+    when: Call init() with valid credentials
+    then: |-
+      - init() resolves without error
+      - validatedAt timestamp set
+      - disconnect() called
+      - Configuration saved to config.yaml
+
+  - test: server_unreachable
+    given: Server URL points to non-existent host
+    when: Call init() with unreachable serverURL
+    then: |-
+      - init() throws network error
+      - User sees "Cannot reach server" message
+      - User prompted to retry or change URL
+      - disconnect() called in error handler
+
+  - test: invalid_password
+    given: Server running but password incorrect
+    when: Call init() with wrong password
+    then: |-
+      - init() throws auth error
+      - User sees "Invalid password" message
+      - User prompted to re-enter password only
+      - serverURL and dataDirectory preserved
+
+  - test: data_directory_not_writable
+    given: dataDir path exists but is read-only
+    when: Call init() with read-only dataDir
+    then: |-
+      - init() throws IO error
+      - User sees "Cannot write to directory" message
+      - User prompted to choose different directory
+      - serverURL and password preserved
+
+  - test: data_directory_creation
+    given: dataDir path does not exist but parent is writable
+    when: Call init() with non-existent but creatable dataDir
+    then: |-
+      - init() creates directory and succeeds
+      - validatedAt timestamp set
+      - Configuration saved
+
+example_implementation:
+  setup_validation:
+    code: |
+      import * as actual from '@actual-app/api';
+      import ora from 'ora';
+
+      async function validateActualBudget(
+        serverUrl: string,
+        password: string,
+        dataDirectory: string
+      ): Promise<boolean> {
+        const spinner = ora('Validating Actual Budget connection...').start();
+
+        try {
+          await actual.init({
+            serverURL: serverUrl,
+            password: password,
+            dataDir: dataDirectory
+          });
+
+          spinner.succeed('Connection validated successfully!');
+          return true;
+
+        } catch (error) {
+          spinner.fail('Connection failed');
+
+          if (error.message.includes('ECONNREFUSED')) {
+            console.error(`Cannot reach server at ${serverUrl}`);
+            console.log('Check server is running and URL is correct.');
+          } else if (error.message.includes('401')) {
+            console.error('Invalid password');
+            console.log('Please check your server password.');
+          } else if (error.message.includes('EACCES')) {
+            console.error(`Cannot write to ${dataDirectory}`);
+            console.log('Check path and permissions.');
+          } else {
+            console.error(`Unexpected error: ${error.message}`);
+          }
+
+          return false;
+
+        } finally {
+          await actual.disconnect();
+        }
+      }
+
+dependencies:
+  required:
+    - "@actual-app/api": "^25.0.0"
+
+  peer_dependencies:
+    - Node.js: ">=18.0.0" (for SDK compatibility)
+
+security_considerations:
+  password_storage:
+    format: plain_text
+    justification: Read-only transaction access, acceptable per spec
+    recommendation: |-
+      Future enhancement: Encrypt password at rest using OS keychain.
+      For v1: Plain text in config.yaml is acceptable.
+
+  server_url_validation:
+    requirement: Must validate URL format before init()
+    prevent: |-
+      - Command injection via malformed URLs
+      - File path traversal via file:// URLs
+    validation: Only allow http:// and https:// schemes
+
+  data_directory_validation:
+    requirement: Must validate path is absolute
+    prevent: |-
+      - Relative path confusion
+      - Writing to unexpected locations
+    validation: Path starts with / (Unix) or drive letter (Windows)
+
+platform_compatibility:
+  supported:
+    - macOS (Darwin)
+    - Linux
+    - Windows with WSL
+
+  considerations:
+    - Path separators: Use path.join() for cross-platform compatibility
+    - Home directory: Expand ~ to absolute path
+    - File permissions: Windows may not support Unix chmod patterns

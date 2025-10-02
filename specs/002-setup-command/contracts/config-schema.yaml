@@ -1,0 +1,520 @@
+# Configuration Schema Definition
+# Defines validation rules for config.yaml structure using zod
+
+validation_library: zod
+library_version: "^3.22.0"
+rationale: |-
+  Zod chosen for:
+  - TypeScript-first design with type inference
+  - Runtime validation with clear error messages
+  - Schema composition for complex validation
+  - JSON schema generation support
+
+config_file:
+  location: "config.yaml" (project root)
+  format: YAML
+  encoding: utf-8
+  permissions_recommended: "600" (user read/write only)
+
+schema_version: "1.0.0"
+
+# Zod Schema Definition (TypeScript)
+zod_schema: |
+  import { z } from 'zod';
+
+  // Monzo Configuration Schema
+  const MonzoConfigSchema = z.object({
+    clientId: z.string()
+      .startsWith('oauth2client_', 'Client ID must start with oauth2client_')
+      .min(20, 'Client ID appears invalid (too short)'),
+
+    clientSecret: z.string()
+      .regex(/^mnz(conf|pub)/, 'Client secret must start with mnzconf or mnzpub')
+      .min(20, 'Client secret appears invalid (too short)'),
+
+    accessToken: z.string()
+      .min(20)
+      .optional(),
+
+    refreshToken: z.string()
+      .min(20)
+      .optional(),
+
+    tokenExpiresAt: z.string()
+      .datetime({ message: 'tokenExpiresAt must be ISO 8601 format' })
+      .optional(),
+
+    authorizedAt: z.string()
+      .datetime({ message: 'authorizedAt must be ISO 8601 format' })
+      .optional()
+  }).refine(
+    data => {
+      // If accessToken exists, refreshToken and tokenExpiresAt must also exist
+      if (data.accessToken) {
+        return data.refreshToken && data.tokenExpiresAt && data.authorizedAt;
+      }
+      return true;
+    },
+    {
+      message: 'If accessToken is set, refreshToken, tokenExpiresAt, and authorizedAt must also be set',
+      path: ['accessToken']
+    }
+  );
+
+  // Actual Budget Configuration Schema
+  const ActualBudgetConfigSchema = z.object({
+    serverUrl: z.string()
+      .url('Server URL must be valid HTTP/HTTPS URL')
+      .regex(/^https?:\/\//, 'Server URL must start with http:// or https://')
+      .refine(
+        url => !url.endsWith('/'),
+        'Server URL should not end with trailing slash'
+      ),
+
+    password: z.string()
+      .min(1, 'Password cannot be empty'),
+
+    dataDirectory: z.string()
+      .min(1, 'Data directory cannot be empty')
+      .refine(
+        path => path.startsWith('/') || /^[A-Z]:\\/.test(path) || path.startsWith('~'),
+        'Data directory must be absolute path (starts with / or drive letter or ~)'
+      ),
+
+    validatedAt: z.string()
+      .datetime({ message: 'validatedAt must be ISO 8601 format' })
+      .optional()
+  });
+
+  // Root Configuration Schema
+  export const ConfigSchema = z.object({
+    configVersion: z.string()
+      .default('1.0.0')
+      .optional(),
+
+    monzo: MonzoConfigSchema,
+
+    actualBudget: ActualBudgetConfigSchema,
+
+    setupCompletedAt: z.string()
+      .datetime({ message: 'setupCompletedAt must be ISO 8601 format' })
+      .optional()
+  });
+
+  // TypeScript type inference
+  export type Config = z.infer<typeof ConfigSchema>;
+  export type MonzoConfig = z.infer<typeof MonzoConfigSchema>;
+  export type ActualBudgetConfig = z.infer<typeof ActualBudgetConfigSchema>;
+
+# Validation Rules by Field
+
+monzo_config:
+  clientId:
+    type: string
+    required: true
+    pattern: "^oauth2client_"
+    min_length: 20
+    example: "oauth2client_00009abc123"
+    validation_error: "Client ID must start with 'oauth2client_' and be at least 20 characters"
+
+  clientSecret:
+    type: string
+    required: true
+    pattern: "^mnz(conf|pub)"
+    min_length: 20
+    example: "mnzconf.secret123"
+    validation_error: "Client secret must start with 'mnzconf' or 'mnzpub' and be at least 20 characters"
+
+  accessToken:
+    type: string
+    required: false (only after successful OAuth)
+    min_length: 20
+    example: "access_token_abc123..."
+    validation_error: "Access token must be at least 20 characters"
+    conditional_requirement: If set, refreshToken, tokenExpiresAt, and authorizedAt must also be set
+
+  refreshToken:
+    type: string
+    required: false (only after successful OAuth)
+    min_length: 20
+    example: "refresh_token_xyz789..."
+    validation_error: "Refresh token must be at least 20 characters"
+
+  tokenExpiresAt:
+    type: string
+    required: false (only after successful OAuth)
+    format: ISO 8601 datetime
+    example: "2025-10-01T18:00:00.000Z"
+    validation_error: "Token expiry must be ISO 8601 datetime format"
+    business_rule: Should be authorizedAt + 21600 seconds (6 hours)
+
+  authorizedAt:
+    type: string
+    required: false (only after successful OAuth)
+    format: ISO 8601 datetime
+    example: "2025-10-01T12:00:00.000Z"
+    validation_error: "Authorization timestamp must be ISO 8601 datetime format"
+
+actual_budget_config:
+  serverUrl:
+    type: string
+    required: true
+    format: URL (HTTP/HTTPS only)
+    pattern: "^https?://"
+    constraints:
+      - No trailing slash
+      - Must be valid URL format
+    examples:
+      - "http://localhost:5006"
+      - "https://budget.example.com"
+    validation_errors:
+      - "Server URL must be valid HTTP/HTTPS URL"
+      - "Server URL should not end with trailing slash"
+
+  password:
+    type: string
+    required: true
+    min_length: 1
+    validation_error: "Password cannot be empty"
+    security_note: Plain text storage acceptable per spec (read-only transaction access)
+
+  dataDirectory:
+    type: string
+    required: true
+    format: Absolute path
+    constraints:
+      - Must start with / (Unix) or drive letter (Windows) or ~
+      - Will be expanded from ~ to absolute path at runtime
+    examples:
+      - "/Users/alex/.actual-budget/data"
+      - "~/.actual-budget/data"
+      - "C:\\Users\\Alex\\.actual-budget\\data"
+    validation_error: "Data directory must be absolute path (starts with / or drive letter or ~)"
+
+  validatedAt:
+    type: string
+    required: false (only after successful validation)
+    format: ISO 8601 datetime
+    example: "2025-10-01T12:05:00.000Z"
+    validation_error: "Validation timestamp must be ISO 8601 datetime format"
+    presence_indicates: Successful connection to Actual Budget server
+
+root_config:
+  configVersion:
+    type: string
+    required: false
+    default: "1.0.0"
+    description: Config schema version for future migrations
+    validation_error: "Config version must be semver format"
+
+  setupCompletedAt:
+    type: string
+    required: false (only after full setup completion)
+    format: ISO 8601 datetime
+    example: "2025-10-01T12:05:00.000Z"
+    validation_error: "Setup completion timestamp must be ISO 8601 datetime format"
+    presence_indicates: Both Monzo and Actual Budget configured successfully
+
+# Validation States
+
+config_states:
+  unconfigured:
+    description: No config.yaml file exists
+    validation: File does not exist
+    next_action: Run full setup
+
+  partial_monzo_only:
+    description: Monzo configured, Actual Budget incomplete
+    validation: |-
+      - monzo.accessToken exists
+      - actualBudget.validatedAt missing
+    next_action: Validate Monzo tokens, proceed to Actual Budget setup
+
+  partial_actual_only:
+    description: Actual Budget configured, Monzo incomplete (unlikely)
+    validation: |-
+      - actualBudget.validatedAt exists
+      - monzo.accessToken missing
+    next_action: Run Monzo OAuth, keep Actual Budget config
+
+  complete:
+    description: Both phases configured successfully
+    validation: |-
+      - monzo.accessToken exists
+      - actualBudget.validatedAt exists
+      - setupCompletedAt exists
+    next_action: Show reconfiguration menu
+
+  expired_tokens:
+    description: Monzo tokens expired (>6 hours old)
+    validation: |-
+      - monzo.tokenExpiresAt < current time
+    next_action: Re-run Monzo OAuth
+
+  malformed:
+    description: Config file exists but invalid YAML or schema
+    validation: YAML parse error or zod validation error
+    next_action: Display error, offer to delete and start fresh
+
+# Validation Error Handling
+
+error_handling:
+  yaml_parse_error:
+    detection: "js-yaml throws YAMLException"
+    user_message: |-
+      Config file is corrupted (invalid YAML syntax).
+      File location: {config_path}
+      Error: {error.message}
+
+    recovery_options:
+      - label: "Delete config and start fresh"
+        action: delete_config_file, run_setup
+      - label: "Edit config manually"
+        action: open_config_in_editor
+      - label: "Exit"
+        action: exit_with_code_3
+
+  schema_validation_error:
+    detection: "ConfigSchema.parse() throws ZodError"
+    user_message: |-
+      Config file has validation errors:
+      {formatted_zod_errors}
+
+    recovery_options:
+      - label: "Fix errors and retry"
+        action: retry_validation
+      - label: "Delete config and start fresh"
+        action: delete_config_file, run_setup
+      - label: "Exit"
+        action: exit_with_code_3
+
+  missing_required_fields:
+    detection: "ZodError with issue.code === 'invalid_type'"
+    user_message: |-
+      Config is missing required fields:
+      {list_of_missing_fields}
+
+    recovery_options:
+      - label: "Run setup to complete configuration"
+        action: run_setup_in_recovery_mode
+      - label: "Delete config and start fresh"
+        action: delete_config_file, run_setup
+      - label: "Exit"
+        action: exit_with_code_3
+
+# Validation Implementation
+
+validation_function: |
+  import { ConfigSchema } from './config-schema';
+  import { ZodError } from 'zod';
+  import fs from 'fs/promises';
+  import yaml from 'js-yaml';
+
+  export async function validateConfig(configPath: string): Promise<{
+    valid: boolean;
+    config?: Config;
+    errors?: string[];
+    state?: 'unconfigured' | 'partial_monzo_only' | 'partial_actual_only' | 'complete' | 'expired_tokens' | 'malformed';
+  }> {
+    try {
+      // Check if file exists
+      try {
+        await fs.access(configPath);
+      } catch {
+        return { valid: false, state: 'unconfigured' };
+      }
+
+      // Read and parse YAML
+      const fileContent = await fs.readFile(configPath, 'utf-8');
+      let rawConfig: unknown;
+
+      try {
+        rawConfig = yaml.load(fileContent);
+      } catch (yamlError) {
+        return {
+          valid: false,
+          state: 'malformed',
+          errors: [`YAML parse error: ${yamlError.message}`]
+        };
+      }
+
+      // Validate against schema
+      try {
+        const config = ConfigSchema.parse(rawConfig);
+
+        // Determine state
+        const state = determineConfigState(config);
+
+        return { valid: true, config, state };
+
+      } catch (zodError) {
+        if (zodError instanceof ZodError) {
+          const errors = zodError.errors.map(err =>
+            `${err.path.join('.')}: ${err.message}`
+          );
+
+          return {
+            valid: false,
+            state: 'malformed',
+            errors
+          };
+        }
+        throw zodError;
+      }
+
+    } catch (error) {
+      return {
+        valid: false,
+        state: 'malformed',
+        errors: [`Unexpected error: ${error.message}`]
+      };
+    }
+  }
+
+  function determineConfigState(config: Config): string {
+    const now = new Date();
+    const hasMonzoTokens = !!config.monzo.accessToken;
+    const hasActualValidation = !!config.actualBudget.validatedAt;
+    const monzoExpired = config.monzo.tokenExpiresAt
+      ? new Date(config.monzo.tokenExpiresAt) < now
+      : false;
+
+    if (monzoExpired) {
+      return 'expired_tokens';
+    }
+
+    if (hasMonzoTokens && hasActualValidation && config.setupCompletedAt) {
+      return 'complete';
+    }
+
+    if (hasMonzoTokens && !hasActualValidation) {
+      return 'partial_monzo_only';
+    }
+
+    if (!hasMonzoTokens && hasActualValidation) {
+      return 'partial_actual_only';
+    }
+
+    return 'unconfigured';
+  }
+
+# Testing Strategy
+
+test_scenarios:
+  - scenario: Valid complete config
+    input: config-templates.yaml:complete
+    expected: { valid: true, state: 'complete' }
+
+  - scenario: Valid partial config (Monzo only)
+    input: config-templates.yaml:partial_monzo_only
+    expected: { valid: true, state: 'partial_monzo_only' }
+
+  - scenario: Expired tokens
+    input: config-templates.yaml:expired_tokens
+    expected: { valid: true, state: 'expired_tokens' }
+
+  - scenario: Missing required field (clientId)
+    input: |-
+      monzo:
+        clientSecret: "mnzconf_secret"
+      actualBudget:
+        serverUrl: "http://localhost:5006"
+        password: "test"
+        dataDirectory: "/tmp/actual"
+    expected:
+      valid: false
+      state: malformed
+      errors: ["monzo.clientId: Required"]
+
+  - scenario: Invalid URL format (no protocol)
+    input: |-
+      monzo:
+        clientId: "oauth2client_123"
+        clientSecret: "mnzconf_secret"
+      actualBudget:
+        serverUrl: "localhost:5006"
+        password: "test"
+        dataDirectory: "/tmp/actual"
+    expected:
+      valid: false
+      errors: ["actualBudget.serverUrl: Server URL must start with http:// or https://"]
+
+  - scenario: Relative path for dataDirectory
+    input: |-
+      monzo:
+        clientId: "oauth2client_123"
+        clientSecret: "mnzconf_secret"
+      actualBudget:
+        serverUrl: "http://localhost:5006"
+        password: "test"
+        dataDirectory: "./data"
+    expected:
+      valid: false
+      errors: ["actualBudget.dataDirectory: Data directory must be absolute path"]
+
+  - scenario: Malformed YAML syntax
+    input: |-
+      monzo:
+        clientId: oauth2client_123
+        clientSecret: [invalid
+      actualBudget:
+    expected:
+      valid: false
+      state: malformed
+      errors: ["YAML parse error: ..."]
+
+  - scenario: accessToken without refreshToken
+    input: |-
+      monzo:
+        clientId: "oauth2client_123"
+        clientSecret: "mnzconf_secret"
+        accessToken: "access_token_abc"
+      actualBudget:
+        serverUrl: "http://localhost:5006"
+        password: "test"
+        dataDirectory: "/tmp/actual"
+    expected:
+      valid: false
+      errors: ["monzo.accessToken: If accessToken is set, refreshToken, tokenExpiresAt, and authorizedAt must also be set"]
+
+# Integration with Setup Command
+
+usage_in_setup:
+  on_startup:
+    - Load config with validateConfig()
+    - If state === 'unconfigured': Run full setup
+    - If state === 'partial_monzo_only': Validate tokens, proceed to Actual Budget
+    - If state === 'expired_tokens': Re-run Monzo OAuth
+    - If state === 'complete': Show reconfiguration menu
+    - If state === 'malformed': Display errors, offer recovery
+
+  before_save:
+    - Build config object from user inputs
+    - Validate with ConfigSchema.parse() before writing
+    - If validation fails: Display errors, retry prompts
+    - If validation passes: Write to YAML, set file permissions 600
+
+  error_display:
+    - Format ZodError into user-friendly messages
+    - Group errors by entity (monzo vs actualBudget)
+    - Highlight specific fields with validation issues
+
+# Migration Strategy (Future)
+
+migration_approach:
+  when_needed: |-
+    When config schema changes in future versions (e.g., adding new fields,
+    changing validation rules), detect configVersion mismatch and migrate.
+
+  version_detection: |-
+    if (!config.configVersion || config.configVersion !== CURRENT_VERSION) {
+      runMigration(config.configVersion || '1.0.0', CURRENT_VERSION);
+    }
+
+  migration_1_0_to_1_1_example: |-
+    // Example: Adding new optional field in v1.1
+    if (config.configVersion === '1.0.0') {
+      config.newField = defaultValue;
+      config.configVersion = '1.1.0';
+      saveConfig(config);
+    }

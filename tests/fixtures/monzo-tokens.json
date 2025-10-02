@@ -1,0 +1,18 @@
+{
+  "validTokenResponse": {
+    "access_token": "access_token_abc123xyz789_valid",
+    "refresh_token": "refresh_token_def456uvw012_valid",
+    "expires_in": 21600,
+    "token_type": "Bearer"
+  },
+  "expiredTokenResponse": {
+    "access_token": "access_token_expired_old",
+    "refresh_token": "refresh_token_expired_old",
+    "expires_in": 21600,
+    "token_type": "Bearer"
+  },
+  "invalidTokenError": {
+    "error": "invalid_grant",
+    "error_description": "The authorization code is invalid or expired"
+  }
+}

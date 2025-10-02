@@ -1,0 +1,328 @@
+# Setup Command Flow Contract
+# Defines the interactive setup workflow with two sequential phases
+
+command: actual-monzo setup
+
+description: |
+  Interactive CLI command that guides users through configuring both
+  Monzo bank account OAuth authentication and Actual Budget server connection.
+  Supports partial setup recovery and independent reconfiguration.
+
+phases:
+  - name: monzo-oauth
+    description: Phase 1 - Monzo Bank Account Authentication
+
+    preconditions:
+      - No existing valid Monzo configuration, OR
+      - User requested Monzo reconfiguration
+
+    inputs:
+      - name: clientId
+        type: string
+        source: interactive_prompt
+        prompt: "Enter your Monzo OAuth client ID:"
+        validation:
+          - non_empty
+          - typically_starts_with: "oauth2client_"
+
+      - name: clientSecret
+        type: string
+        source: interactive_prompt (masked)
+        prompt: "Enter your Monzo OAuth client secret:"
+        validation:
+          - non_empty
+          - masked_display: true
+
+    process:
+      - step: create_callback_server
+        description: Start temporary HTTP server on localhost:3000-3010
+        error_handling:
+          PORT_IN_USE: Try next port in range (3001-3010)
+          ALL_PORTS_BUSY: Display error, suggest closing applications
+
+      - step: generate_authorization_url
+        description: Build OAuth URL with client_id, redirect_uri, state (CSRF token)
+        parameters:
+          base_url: "https://auth.monzo.com/"
+          response_type: "code"
+          state: generated_uuid_v4
+
+      - step: open_browser
+        description: Launch user's default browser to authorization URL
+        display: Clickable link in terminal if browser fails to open
+        message: "Opening browser for Monzo authorization..."
+
+      - step: wait_for_callback
+        description: Listen on callback server for OAuth redirect
+        timeout: infinite (user can Ctrl+C)
+        validation:
+          - state_parameter_matches: true  # CSRF protection
+
+      - step: exchange_authorization_code
+        description: POST to token endpoint with code, client credentials
+        endpoint: "https://api.monzo.com/oauth2/token"
+        error_handling:
+          NETWORK_ERROR: Display connection error, offer retry
+          INVALID_CLIENT: Invalid clientId/clientSecret, re-prompt
+          ACCESS_DENIED: User denied authorization in mobile app
+
+    outputs:
+      - name: accessToken
+        type: string
+        description: OAuth access token (valid for 6 hours)
+
+      - name: refreshToken
+        type: string
+        description: OAuth refresh token (used by future commands)
+
+      - name: tokenExpiresAt
+        type: timestamp
+        description: Access token expiration (current time + 21600 seconds)
+
+    success_criteria:
+      - accessToken is non-empty string
+      - refreshToken is non-empty string
+      - Tokens persisted to config.yaml
+
+    failure_scenarios:
+      - scenario: OAUTH_FAILED
+        causes:
+          - Invalid client credentials
+          - User denial in mobile app
+          - Network/server error
+        user_action: Display error details, offer retry or change credentials
+        exit_code: 1 (ERROR)
+
+      - scenario: PORT_CONFLICT
+        causes:
+          - All ports 3000-3010 already in use
+        user_action: Suggest closing applications, offer manual port selection
+        exit_code: 1 (ERROR)
+
+      - scenario: BROWSER_LAUNCH_FAILED
+        causes:
+          - No default browser configured
+          - Headless environment
+          - Browser launch permission denied
+        handling:
+          - Catch error from `open` package
+          - Display error message: "Could not open browser automatically"
+          - Display clickable URL with instruction: "Please open this URL in your browser:"
+          - Format URL for terminal click support (most terminals auto-detect URLs)
+          - Continue waiting for callback (same timeout as normal flow)
+        user_action: Copy URL to browser manually or click if terminal supports it
+        exit_code: Continue normally (0 on success, 1 on OAuth failure)
+
+    postconditions:
+      - Monzo configuration saved to config.yaml (even if Actual Budget fails)
+      - Callback server shutdown and cleaned up
+      - Progress to Actual Budget phase
+
+  - name: actual-budget-config
+    description: Phase 2 - Actual Budget Server Configuration
+
+    preconditions:
+      - Monzo phase completed successfully (has valid access token), OR
+      - Existing valid Monzo config AND user requested Actual Budget reconfiguration
+
+    inputs:
+      - name: serverUrl
+        type: url_string
+        source: interactive_prompt
+        prompt: "Enter your Actual Budget server URL:"
+        placeholder: "http://localhost:5006"
+        validation:
+          - valid_http_https_url
+          - no_trailing_slash
+
+      - name: password
+        type: string
+        source: interactive_prompt (masked)
+        prompt: "Enter your Actual Budget server password:"
+        validation:
+          - non_empty
+          - masked_display: true
+
+      - name: dataDirectory
+        type: file_path
+        source: interactive_prompt
+        prompt: "Enter budget data directory path:"
+        default: "~/.actual-budget/data"
+        validation:
+          - absolute_path
+          - directory_exists_or_creatable
+          - directory_writable
+
+    process:
+      - step: display_validation_spinner
+        message: "Validating Actual Budget connection..."
+
+      - step: test_connection
+        description: Call actual.init() with provided credentials
+        method: "@actual-app/api.init()"
+        parameters:
+          serverURL: "{serverUrl}"
+          password: "{password}"
+          dataDir: "{dataDirectory}"
+        error_handling:
+          NETWORK_ERROR: "Server unreachable at {serverUrl}"
+          AUTH_ERROR: "Invalid password"
+          IO_ERROR: "Cannot write to directory {dataDirectory}"
+
+      - step: disconnect
+        description: Cleanup Actual SDK connection after validation
+        method: "@actual-app/api.disconnect()"
+
+    outputs:
+      - name: connectionValid
+        type: boolean
+        description: True if actual.init() succeeded
+
+      - name: validatedAt
+        type: timestamp
+        description: Timestamp of successful validation
+
+    success_criteria:
+      - connectionValid is true
+      - validatedAt timestamp recorded
+      - Full configuration persisted to config.yaml
+      - setupCompletedAt timestamp set
+
+    failure_scenarios:
+      - scenario: SERVER_UNREACHABLE
+        causes:
+          - Network error
+          - Invalid URL
+          - Server not running
+        user_action: Offer retry or change server URL
+        exit_code: 1 (ERROR)
+
+      - scenario: INVALID_CREDENTIALS
+        causes:
+          - Wrong password
+          - Server authentication failure
+        user_action: Re-prompt for password only (keep URL and directory)
+        exit_code: 1 (ERROR)
+
+      - scenario: DIRECTORY_ERROR
+        causes:
+          - Path not writable
+          - Path doesn't exist and can't be created
+          - Insufficient permissions
+        user_action: Re-prompt for different directory path
+        exit_code: 1 (ERROR)
+
+    postconditions:
+      - Complete configuration saved to config.yaml
+      - Display success message with next steps
+      - User can now use other CLI commands
+
+reconfiguration_mode:
+  description: When setup runs with existing complete configuration
+
+  flow:
+    - step: display_menu
+      prompt: "Existing configuration found. What would you like to do?"
+      options:
+        - label: "Reconfigure Monzo only"
+          action: run_monzo_phase_only
+        - label: "Reconfigure Actual Budget only"
+          action: run_actual_budget_phase_only
+        - label: "Reconfigure both"
+          action: run_both_phases
+        - label: "Exit"
+          action: exit_without_changes
+
+  validation_logic:
+    monzo_only_selected:
+      preconditions:
+        - actualBudget.validatedAt must exist
+        - actualBudget.serverUrl must exist
+      validation:
+        - Verify actualBudget section is present and complete
+        - If missing: Display error "Actual Budget not configured. Run full setup."
+      execution:
+        - Keep entire actualBudget section unchanged
+        - Run Monzo OAuth phase only
+        - Update monzo section with new tokens
+        - Preserve setupCompletedAt if it existed
+
+    actual_budget_only_selected:
+      preconditions:
+        - monzo.accessToken must exist
+        - monzo.refreshToken must exist
+      validation:
+        - Test Monzo tokens with GET /ping/whoami
+        - If 401/expired: Display error "Monzo tokens expired. Please reconfigure Monzo first."
+        - If network error: Display warning "Cannot validate Monzo tokens (network issue). Proceeding with Actual Budget reconfiguration only."
+        - If success: Proceed to Actual Budget phase
+      execution:
+        - Keep entire monzo section unchanged
+        - Run Actual Budget phase only
+        - Update actualBudget section with new values
+        - Preserve setupCompletedAt if it existed
+
+    both_selected:
+      preconditions: None (fresh start)
+      validation: None required
+      execution:
+        - Run full setup flow (Monzo → Actual Budget)
+        - Overwrite entire config.yaml
+        - Set new setupCompletedAt
+
+    exit_selected:
+      preconditions: None
+      validation: None required
+      execution:
+        - Display "No changes made."
+        - Exit with code 0 (SUCCESS)
+
+  error_scenarios:
+    partial_config_detected:
+      description: User selected "Actual Budget only" but Monzo not configured
+      condition: actualBudget.validatedAt exists but monzo.accessToken missing
+      user_message: |-
+        Cannot reconfigure Actual Budget only - Monzo is not configured.
+        Please select "Reconfigure both" or run setup again.
+      recovery: Return to menu or exit
+
+    expired_tokens_during_actual_only:
+      description: User selected "Actual Budget only" but Monzo tokens expired
+      condition: monzo.tokenExpiresAt < current time
+      user_message: |-
+        Monzo tokens have expired (expired at {tokenExpiresAt}).
+        You must reconfigure Monzo before updating Actual Budget settings.
+      recovery_options:
+        - label: "Reconfigure both"
+          action: run_both_phases
+        - label: "Exit"
+          action: exit_with_code_0
+
+partial_setup_recovery:
+  description: When setup runs with only Monzo configuration (no Actual Budget)
+
+  flow:
+    - step: detect_partial_config
+      condition: monzo.accessToken exists AND actualBudget.validatedAt missing
+
+    - step: validate_existing_monzo_tokens
+      description: Test Monzo API connectivity with existing tokens
+      endpoint: "https://api.monzo.com/ping/whoami"
+      success: Skip to Actual Budget phase
+      failure: Re-run Monzo OAuth phase
+
+    - step: run_actual_budget_phase
+      description: Complete setup by configuring Actual Budget
+
+exit_codes:
+  0: SUCCESS - Setup completed successfully
+  1: ERROR - General error (network, validation, etc.)
+  2: USER_CANCELLED - User pressed Ctrl+C or selected exit
+  3: CONFIGURATION_ERROR - Invalid existing configuration
+
+display_conventions:
+  prompts: Use Inquirer interactive prompts
+  progress: Use Ora spinners for async operations (OAuth, validation)
+  errors: Use Chalk red for errors with actionable guidance
+  success: Use Chalk green for success messages
+  links: Display clickable terminal links (Cmd+click support)

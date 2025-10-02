@@ -1,0 +1,21 @@
+{
+  "authorizationSuccessCallback": {
+    "code": "auth_code_abc123xyz789",
+    "state": "state_uuid_csrf_protection_abc123"
+  },
+  "authorizationDeniedError": {
+    "error": "access_denied",
+    "error_description": "The user denied authorization",
+    "state": "state_uuid_csrf_protection_abc123"
+  },
+  "tokenExchangeSuccess": {
+    "access_token": "access_token_new_xyz789abc123",
+    "refresh_token": "refresh_token_new_def456uvw012",
+    "expires_in": 21600,
+    "token_type": "Bearer"
+  },
+  "tokenExchangeInvalidGrant": {
+    "error": "invalid_grant",
+    "error_description": "The provided authorization grant is invalid, expired, or revoked"
+  }
+}

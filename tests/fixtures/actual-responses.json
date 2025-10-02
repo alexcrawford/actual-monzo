@@ -1,0 +1,23 @@
+{
+  "initSuccess": null,
+  "initNetworkError": {
+    "code": "ECONNREFUSED",
+    "message": "connect ECONNREFUSED 127.0.0.1:5006",
+    "errno": -61,
+    "syscall": "connect",
+    "address": "127.0.0.1",
+    "port": 5006
+  },
+  "initAuthError": {
+    "message": "401 Unauthorized: Invalid password",
+    "status": 401,
+    "statusText": "Unauthorized"
+  },
+  "initIOError": {
+    "code": "EACCES",
+    "message": "EACCES: permission denied, open '/readonly/path/data'",
+    "errno": -13,
+    "syscall": "open",
+    "path": "/readonly/path/data"
+  }
+}
