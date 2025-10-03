@@ -12,11 +12,11 @@ import type { DateRange } from '../../src/types/import';
 
 // Mock fs for config file operations
 vi.mock('fs/promises', () => ({
-  readFile: vi.fn((...args) => vol.promises.readFile(...args)),
-  writeFile: vi.fn((...args) => vol.promises.writeFile(...args)),
-  mkdir: vi.fn((...args) => vol.promises.mkdir(...args)),
-  access: vi.fn((...args) => vol.promises.access(...args)),
-  stat: vi.fn((...args) => vol.promises.stat(...args)),
+  readFile: vi.fn((path, options?) => vol.promises.readFile(path as string, options)),
+  writeFile: vi.fn((path, data, options?) => vol.promises.writeFile(path as string, data, options)),
+  mkdir: vi.fn((path, options?) => vol.promises.mkdir(path as string, options)),
+  access: vi.fn((path, mode?) => vol.promises.access(path as string, mode)),
+  stat: vi.fn((path, options?) => vol.promises.stat(path as string, options)),
 }));
 
 vi.mock('fs', () => ({
