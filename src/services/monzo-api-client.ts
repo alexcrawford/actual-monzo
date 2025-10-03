@@ -16,6 +16,12 @@ export interface TokenExchangeParams {
   redirectUri: string;
 }
 
+export interface TokenRefreshParams {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}
+
 export class MonzoApiClient {
   /**
    * Validates Monzo access token by calling /ping/whoami
@@ -37,6 +43,55 @@ export class MonzoApiClient {
         }
         throw new Error(`Monzo API error: ${axiosError.message}`);
       }
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshAccessToken(params: TokenRefreshParams): Promise<OAuthTokenResponse> {
+    try {
+      const response = await axios.post<OAuthTokenResponse>(
+        `${MONZO_API_BASE}/oauth2/token`,
+        {
+          grant_type: 'refresh_token',
+          client_id: params.clientId,
+          client_secret: params.clientSecret,
+          refresh_token: params.refreshToken,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+
+        // Handle OAuth error responses
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data as { error?: string };
+          if (errorData.error) {
+            throw new Error(errorData.error);
+          }
+        }
+
+        // Handle HTTP errors
+        if (axiosError.response?.status === 400) {
+          throw new Error('invalid_grant');
+        }
+
+        if (axiosError.response?.status === 401) {
+          throw new Error('Invalid client credentials');
+        }
+
+        throw new Error(`Token refresh failed: ${axiosError.message}`);
+      }
+
       throw error;
     }
   }
