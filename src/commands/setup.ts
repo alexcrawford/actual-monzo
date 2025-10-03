@@ -7,8 +7,9 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { SetupService } from '../services/setup-service';
-import { validateConfig, configExists } from '../utils/config-manager';
+import { validateConfig, configExists, saveConfig, loadConfig } from '../utils/config-manager';
 import { ConfigState } from '../types/setup';
+import { runAccountMappingFlow } from './map-accounts.js';
 
 export function createSetupCommand(): Command {
   const command = new Command('setup');
@@ -170,6 +171,19 @@ async function runCompleteSetup() {
       dataDirectory: actualAnswers.dataDirectory,
     }
   );
+
+  // Phase 3: Account Mapping
+  let config = await loadConfig();
+
+  try {
+    config = await runAccountMappingFlow(config);
+    await saveConfig(config);
+  } catch (error) {
+    console.error(
+      chalk.yellow('\n⚠ Account mapping failed. You can run it later with:'),
+      chalk.cyan('actual-monzo map-accounts')
+    );
+  }
 }
 
 async function runActualBudgetPhase() {
@@ -221,4 +235,17 @@ async function runActualBudgetPhase() {
     password: answers.password,
     dataDirectory: answers.dataDirectory,
   });
+
+  // Phase 3: Account Mapping
+  let config = await loadConfig();
+
+  try {
+    config = await runAccountMappingFlow(config);
+    await saveConfig(config);
+  } catch (error) {
+    console.error(
+      chalk.yellow('\n⚠ Account mapping failed. You can run it later with:'),
+      chalk.cyan('actual-monzo map-accounts')
+    );
+  }
 }
