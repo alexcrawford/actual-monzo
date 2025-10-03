@@ -5,6 +5,7 @@
 
 import { MonzoOAuthService } from './monzo-oauth-service';
 import { ActualClient } from './actual-client';
+import { MonzoApiClient } from './monzo-api-client';
 import {
   saveConfig as saveConfigFile,
   loadConfig as loadConfigFile,
@@ -30,13 +31,24 @@ export interface ActualSetupParams {
   dataDirectory: string;
 }
 
+export interface VerificationResult {
+  success: boolean;
+  verified: boolean;
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
 export class SetupService {
   private readonly monzoService: MonzoOAuthService;
   private readonly actualClient: ActualClient;
+  private readonly apiClient: MonzoApiClient;
 
   constructor() {
     this.monzoService = new MonzoOAuthService();
     this.actualClient = new ActualClient();
+    this.apiClient = new MonzoApiClient();
   }
 
   /**
@@ -231,6 +243,124 @@ export class SetupService {
     console.log(chalk.dim('Configuration saved to config.yaml\n'));
 
     return session;
+  }
+
+  /**
+   * Verifies existing Monzo configuration by calling /ping/whoami
+   */
+  async verifyMonzoConfig(): Promise<VerificationResult> {
+    try {
+      if (!(await configExists())) {
+        return {
+          success: false,
+          verified: false,
+          error: {
+            code: 'CONFIG_NOT_FOUND',
+            message: 'Configuration file not found',
+          },
+        };
+      }
+
+      const config = await this.loadConfig();
+
+      if (!config.monzo.accessToken) {
+        return {
+          success: false,
+          verified: false,
+          error: {
+            code: 'NO_ACCESS_TOKEN',
+            message: 'No Monzo access token found in config',
+          },
+        };
+      }
+
+      await this.apiClient.whoami(config.monzo.accessToken);
+
+      return {
+        success: true,
+        verified: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        verified: false,
+        error: {
+          code: 'VERIFICATION_FAILED',
+          message: error instanceof Error ? error.message : 'Verification failed',
+        },
+      };
+    }
+  }
+
+  /**
+   * Verifies existing Actual Budget configuration by attempting connection
+   */
+  async verifyActualBudgetConfig(): Promise<VerificationResult> {
+    try {
+      if (!(await configExists())) {
+        return {
+          success: false,
+          verified: false,
+          error: {
+            code: 'CONFIG_NOT_FOUND',
+            message: 'Configuration file not found',
+          },
+        };
+      }
+
+      const config = await this.loadConfig();
+
+      if (!config.actualBudget.serverUrl || !config.actualBudget.password) {
+        return {
+          success: false,
+          verified: false,
+          error: {
+            code: 'INCOMPLETE_CONFIG',
+            message: 'Actual Budget configuration incomplete',
+          },
+        };
+      }
+
+      const result = await this.actualClient.validateConnection(
+        config.actualBudget.serverUrl,
+        config.actualBudget.password,
+        config.actualBudget.dataDirectory
+      );
+
+      if (!result.success) {
+        return {
+          success: false,
+          verified: false,
+          error: result.error,
+        };
+      }
+
+      return {
+        success: true,
+        verified: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        verified: false,
+        error: {
+          code: 'VERIFICATION_FAILED',
+          message: error instanceof Error ? error.message : 'Verification failed',
+        },
+      };
+    }
+  }
+
+  /**
+   * Checks if Actual Budget config exists and is valid
+   */
+  async hasActualBudgetConfig(): Promise<boolean> {
+    if (!(await configExists())) {
+      return false;
+    }
+
+    const config = await this.loadConfig();
+    return !!config.actualBudget.validatedAt;
   }
 
   /**
